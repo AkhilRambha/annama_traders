@@ -286,7 +286,7 @@ function ProductsManager() {
           <h3 className="text-lg font-medium mb-4">{isAdding ? "Add New Product" : "Edit Product"}</h3>
           <div className="grid grid-cols-2 gap-4">
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Name</label><input type="text" className="w-full border p-2 rounded" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
-            <div><label className="block text-xs font-bold text-gray-600 mb-1">Price (â‚¹)</label><input type="number" className="w-full border p-2 rounded" value={formData.price} onChange={e => setFormData({...formData, price: Number(e.target.value)})} /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Price (₹)</label><input type="number" className="w-full border p-2 rounded" value={formData.price} onChange={e => setFormData({...formData, price: Number(e.target.value)})} /></div>
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Category</label><select className="w-full border p-2 rounded" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>{categories.map((c, i) => { const cName = typeof c === 'string' ? c : (c.name || c.id || `cat-${i}`); return <option key={cName} value={cName}>{cName}</option>})}</select></div>
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Image URL</label><input type="text" className="w-full border p-2 rounded" value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} placeholder="https://..." /></div>
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Stock Quantity</label><input type="number" className="w-full border p-2 rounded" value={formData.stock || 0} onChange={e => setFormData({...formData, stock: Number(e.target.value)})} /></div>
@@ -319,8 +319,8 @@ function ProductsManager() {
               <tr key={p.id} className="hover:bg-gray-50">
                 <td className="p-3"><img src={p.image} className="w-12 h-16 object-cover rounded" alt="" /></td>
                 <td className="p-3 font-medium text-gray-900">{p.name} {p.isNew && <span className="ml-2 text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded">NEW</span>} {p.isFeatured && <span className="ml-2 text-[10px] bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">FEATURED</span>}</td>
-                <td className="p-3 text-gray-600">â‚¹{p.price}</td>
-                <td className="p-3 text-gray-600">{p.category}</td>
+                <td className="p-3 text-gray-600">₹</td>
+                <td className="p-3 text-gray-600">₹</td>
                 <td className="p-3 text-right">
                   <button onClick={() => handleEdit(p)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded mr-2"><Edit2 size={16} /></button>
                   <button onClick={() => deleteProduct(p.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
@@ -390,7 +390,7 @@ function DressesManager() {
           <h3 className="text-lg font-medium mb-4">{isAdding ? "Add New Product" : "Edit Product"}</h3>
           <div className="grid grid-cols-2 gap-4">
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Name</label><input type="text" className="w-full border p-2 rounded" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
-            <div><label className="block text-xs font-bold text-gray-600 mb-1">Price (â‚¹)</label><input type="number" className="w-full border p-2 rounded" value={formData.price} onChange={e => setFormData({...formData, price: Number(e.target.value)})} /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Price (₹)</label><input type="number" className="w-full border p-2 rounded" value={formData.price} onChange={e => setFormData({...formData, price: Number(e.target.value)})} /></div>
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Category</label><select className="w-full border p-2 rounded" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>{dressCategoryNames.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Image URL</label><input type="text" className="w-full border p-2 rounded" value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} placeholder="https://..." /></div>
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Stock Quantity</label><input type="number" className="w-full border p-2 rounded" value={formData.stock || 0} onChange={e => setFormData({...formData, stock: Number(e.target.value)})} /></div>
@@ -423,8 +423,8 @@ function DressesManager() {
               <tr key={p.id} className="hover:bg-gray-50">
                 <td className="p-3"><img src={p.image} className="w-12 h-16 object-cover rounded" alt="" /></td>
                 <td className="p-3 font-medium text-gray-900">{p.name} {p.isNew && <span className="ml-2 text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded">NEW</span>} {p.isFeatured && <span className="ml-2 text-[10px] bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">FEATURED</span>}</td>
-                <td className="p-3 text-gray-600">â‚¹{p.price}</td>
-                <td className="p-3 text-gray-600">{p.category}</td>
+                <td className="p-3 text-gray-600">₹</td>
+                <td className="p-3 text-gray-600">₹</td>
                 <td className="p-3 text-right">
                   <button onClick={() => handleEdit(p)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded mr-2"><Edit2 size={16} /></button>
                   <button onClick={() => deleteProduct(p.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
@@ -547,7 +547,7 @@ function ReviewsManager() {
           <div key={r.id} className="p-4 border rounded-md flex justify-between items-start hover:bg-gray-50">
             <div>
               <div className="font-bold text-gray-900">{r.name} <span className="text-sm font-normal text-gray-500 ml-2">{r.location}</span></div>
-              <div className="text-yellow-500 text-sm my-1">{"â˜…".repeat(r.rating)}{"â˜†".repeat(5-r.rating)}</div>
+              <div className="text-yellow-500 text-sm my-1">{"?".repeat(r.rating)}{"?".repeat(5-r.rating)}</div>
               <p className="text-gray-600 text-sm mt-2 italic">"{r.content}"</p>
             </div>
             <div className="flex gap-2 shrink-0">
