@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { db } from "@/lib/firebase";
+import { collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { PRODUCTS, CATEGORIES } from "@/data/products";
 import { ALL_DRESS_PRODUCTS } from "@/data/dressProducts";
 
@@ -109,121 +111,185 @@ const defaultSpecialsCategories = [
 const AdminContext = createContext();
 
 export function AdminProvider({ children }) {
-  // --- STATE INITIALIZATION ---
-  const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem("admin_products");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      // Merge new static products (sarees + dresses) that might have been added
-      const allStatic = [...PRODUCTS, ...ALL_DRESS_PRODUCTS];
-      const newProducts = allStatic.filter(p => !parsed.find(savedP => savedP.id === p.id));
-      return [...newProducts, ...parsed];
-    }
-    return [...PRODUCTS, ...ALL_DRESS_PRODUCTS];
-  });
-
-  const [categories, setCategories] = useState(() => {
-    const saved = localStorage.getItem("admin_categories");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      // Ensure it's an array of strings (cleanup any corrupted data)
-      let clean = parsed.map(c => typeof c === 'string' ? c : (c.name || c.id || 'Unknown')); if (!clean.includes('Jewellery')) clean.push('Jewellery'); return clean;
-    }
-    return CATEGORIES;
-  });
-
-  const [heroImages, setHeroImages] = useState(() => {
-    const saved = localStorage.getItem("admin_heroImages");
-    return saved ? JSON.parse(saved) : defaultHeroImages;
-  });
-
-  const [reviews, setReviews] = useState(() => {
-    const saved = localStorage.getItem("admin_reviews");
-    return saved ? JSON.parse(saved) : defaultReviews;
-  });
-
-  const [contactInfo, setContactInfo] = useState(() => {
-    const saved = localStorage.getItem("admin_contactInfo");
-    return saved ? JSON.parse(saved) : defaultContactInfo;
-  });
-
-  const [legalPages, setLegalPages] = useState(() => {
-    const saved = localStorage.getItem("admin_legalPages");
-    return saved ? JSON.parse(saved) : defaultLegalPages;
-  });
-
-  const [offers, setOffers] = useState(() => {
-    const saved = localStorage.getItem("admin_offers");
-    return saved ? JSON.parse(saved) : defaultOffers;
-  });
-
-  const [heroStats, setHeroStats] = useState(() => {
-    const saved = localStorage.getItem("admin_heroStats");
-    return saved ? JSON.parse(saved) : defaultHeroStats;
-  });
-
-  const [specialsCategories, setSpecialsCategories] = useState(() => {
-    const saved = localStorage.getItem("admin_specialsCategories");
-    return saved ? JSON.parse(saved) : defaultSpecialsCategories;
-  });
-
+  // --- STATE INITIALIZATION (Defaults while loading) ---
+  const [products, setProducts] = useState([...PRODUCTS, ...ALL_DRESS_PRODUCTS]);
+  const [categories, setCategories] = useState([...new Set(CATEGORIES)]);
+  const [heroImages, setHeroImages] = useState(defaultHeroImages);
+  const [reviews, setReviews] = useState(defaultReviews);
+  const [contactInfo, setContactInfo] = useState(defaultContactInfo);
+  const [legalPages, setLegalPages] = useState(defaultLegalPages);
+  const [offers, setOffers] = useState(defaultOffers);
+  const [heroStats, setHeroStats] = useState(defaultHeroStats);
+  const [specialsCategories, setSpecialsCategories] = useState(defaultSpecialsCategories);
+  
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return sessionStorage.getItem("admin_auth") === "true";
   });
 
-  // --- PERSISTENCE ---
-  useEffect(() => { localStorage.setItem("admin_products", JSON.stringify(products)); }, [products]);
-  useEffect(() => { localStorage.setItem("admin_categories", JSON.stringify(categories)); }, [categories]);
-  useEffect(() => { localStorage.setItem("admin_heroImages", JSON.stringify(heroImages)); }, [heroImages]);
-  useEffect(() => { localStorage.setItem("admin_reviews", JSON.stringify(reviews)); }, [reviews]);
-  useEffect(() => { localStorage.setItem("admin_contactInfo", JSON.stringify(contactInfo)); }, [contactInfo]);
-  useEffect(() => { localStorage.setItem("admin_legalPages", JSON.stringify(legalPages)); }, [legalPages]);
-  useEffect(() => { localStorage.setItem("admin_offers", JSON.stringify(offers)); }, [offers]);
+  // --- FIREBASE SYNC (REAL-TIME LISTENER) ---
   useEffect(() => {
-    localStorage.setItem("admin_heroStats", JSON.stringify(heroStats));
-  }, [heroStats]);
+    // Listen to Products
+    const unsubProducts = onSnapshot(collection(db, "products"), (snap) => {
+      if (!snap.empty) {
+        const fbProducts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setProducts(fbProducts);
+      }
+    }, (error) => {
+      console.log("Firebase not configured yet or empty. Using default products.", error);
+    });
 
-  useEffect(() => {
-    localStorage.setItem("admin_specialsCategories", JSON.stringify(specialsCategories));
-  }, [specialsCategories]);
+    // Listen to Reviews
+    const unsubReviews = onSnapshot(collection(db, "reviews"), (snap) => {
+      if (!snap.empty) {
+        const fbReviews = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setReviews(fbReviews);
+      }
+    });
 
-  // --- ACTIONS ---
+    // Listen to Offers
+    const unsubOffers = onSnapshot(collection(db, "offers"), (snap) => {
+      if (!snap.empty) {
+        const fbOffers = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setOffers(fbOffers);
+      }
+    });
+    
+    // Listen to Specials
+    const unsubSpecials = onSnapshot(collection(db, "specials"), (snap) => {
+      if (!snap.empty) {
+        const fbSpecials = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setSpecialsCategories(fbSpecials);
+      }
+    });
+
+    // Listen to Site Settings (Singleton Document)
+    const unsubSettings = onSnapshot(doc(db, "settings", "global"), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.categories) setCategories(data.categories);
+        if (data.heroImages) setHeroImages(data.heroImages);
+        if (data.contactInfo) setContactInfo(data.contactInfo);
+        if (data.legalPages) setLegalPages(data.legalPages);
+        if (data.heroStats) setHeroStats(data.heroStats);
+      }
+    });
+
+    return () => {
+      unsubProducts();
+      unsubReviews();
+      unsubOffers();
+      unsubSpecials();
+      unsubSettings();
+    };
+  }, []);
+
+  // --- FIREBASE ACTIONS ---
+  
   // Products
-  const addProduct = (product) => setProducts([product, ...products]);
-  const updateProduct = (id, updatedProduct) => setProducts(products.map(p => p.id === id ? updatedProduct : p));
-  const deleteProduct = (id) => setProducts(products.filter(p => p.id !== id));
+  const addProduct = async (product) => {
+    // Optimistic update
+    setProducts([product, ...products]);
+    try { await setDoc(doc(db, "products", product.id), product); } catch(e) { console.error(e); }
+  };
+  const updateProduct = async (id, updatedProduct) => {
+    setProducts(products.map(p => p.id === id ? updatedProduct : p));
+    try { await updateDoc(doc(db, "products", id), updatedProduct); } catch(e) { console.error(e); }
+  };
+  const deleteProduct = async (id) => {
+    setProducts(products.filter(p => p.id !== id));
+    try { await deleteDoc(doc(db, "products", id)); } catch(e) { console.error(e); }
+  };
+
+  // Settings sync helper
+  const updateSettings = async (key, value) => {
+    try { await setDoc(doc(db, "settings", "global"), { [key]: value }, { merge: true }); } catch(e) { console.error(e); }
+  };
 
   // Categories
-  const addCategory = (category) => setCategories([...categories, category]);
-  const updateCategory = (oldCategory, newCategory) => setCategories(categories.map(c => c === oldCategory ? newCategory : c));
-  const deleteCategory = (category) => setCategories(categories.filter(c => c !== category));
+  const addCategory = (category) => {
+    const newCat = [...categories, category];
+    setCategories(newCat);
+    updateSettings("categories", newCat);
+  };
+  const updateCategory = (oldCategory, newCategory) => {
+    const newCat = categories.map(c => c === oldCategory ? newCategory : c);
+    setCategories(newCat);
+    updateSettings("categories", newCat);
+  };
+  const deleteCategory = (category) => {
+    const newCat = categories.filter(c => c !== category);
+    setCategories(newCat);
+    updateSettings("categories", newCat);
+  };
 
   // Hero Images
-  const updateHeroImages = (newImages) => setHeroImages(newImages);
+  const updateHeroImages = (newImages) => {
+    setHeroImages(newImages);
+    updateSettings("heroImages", newImages);
+  };
 
   // Reviews
-  const addReview = (review) => setReviews([review, ...reviews]);
-  const updateReview = (id, updatedReview) => setReviews(reviews.map(r => r.id === id ? updatedReview : r));
-  const deleteReview = (id) => setReviews(reviews.filter(r => r.id !== id));
+  const addReview = async (review) => {
+    setReviews([review, ...reviews]);
+    try { 
+      const reviewId = review.id ? String(review.id) : String(Date.now());
+      await setDoc(doc(db, "reviews", reviewId), { ...review, id: reviewId }); 
+    } catch(e) {}
+  };
+  const updateReview = async (id, updatedReview) => {
+    setReviews(reviews.map(r => String(r.id) === String(id) ? updatedReview : r));
+    try { await updateDoc(doc(db, "reviews", String(id)), updatedReview); } catch(e) {}
+  };
+  const deleteReview = async (id) => {
+    setReviews(reviews.filter(r => String(r.id) !== String(id)));
+    try { await deleteDoc(doc(db, "reviews", String(id))); } catch(e) {}
+  };
 
   // Contact Info
-  const updateContactInfo = (newInfo) => setContactInfo(newInfo);
+  const updateContactInfo = (newInfo) => {
+    setContactInfo(newInfo);
+    updateSettings("contactInfo", newInfo);
+  };
 
   // Legal Pages
-  const updateLegalPages = (newPages) => setLegalPages(newPages);
+  const updateLegalPages = (newPages) => {
+    setLegalPages(newPages);
+    updateSettings("legalPages", newPages);
+  };
 
   // Offers
-  const addOffer = (offer) => setOffers([offer, ...offers]);
-  const updateOffer = (id, updatedOffer) => setOffers(offers.map(o => o.id === id ? updatedOffer : o));
-  const deleteOffer = (id) => setOffers(offers.filter(o => o.id !== id));
+  const addOffer = async (offer) => {
+    setOffers([offer, ...offers]);
+    try { await setDoc(doc(db, "offers", offer.id), offer); } catch(e) {}
+  };
+  const updateOffer = async (id, updatedOffer) => {
+    setOffers(offers.map(o => o.id === id ? updatedOffer : o));
+    try { await updateDoc(doc(db, "offers", id), updatedOffer); } catch(e) {}
+  };
+  const deleteOffer = async (id) => {
+    setOffers(offers.filter(o => o.id !== id));
+    try { await deleteDoc(doc(db, "offers", id)); } catch(e) {}
+  };
 
   // Hero Stats
-  const updateHeroStats = (stats) => setHeroStats(stats);
+  const updateHeroStats = (stats) => {
+    setHeroStats(stats);
+    updateSettings("heroStats", stats);
+  };
 
   // Specials Categories
-  const addSpecialCategory = (category) => setSpecialsCategories([...specialsCategories, category]);
-  const updateSpecialCategory = (id, updated) => setSpecialsCategories(specialsCategories.map(c => c.id === id ? updated : c));
-  const deleteSpecialCategory = (id) => setSpecialsCategories(specialsCategories.filter(c => c.id !== id));
+  const addSpecialCategory = async (category) => {
+    setSpecialsCategories([...specialsCategories, category]);
+    try { await setDoc(doc(db, "specials", category.id), category); } catch(e) {}
+  };
+  const updateSpecialCategory = async (id, updated) => {
+    setSpecialsCategories(specialsCategories.map(c => c.id === id ? updated : c));
+    try { await updateDoc(doc(db, "specials", id), updated); } catch(e) {}
+  };
+  const deleteSpecialCategory = async (id) => {
+    setSpecialsCategories(specialsCategories.filter(c => c.id !== id));
+    try { await deleteDoc(doc(db, "specials", id)); } catch(e) {}
+  };
 
   // Auth
   const login = (username, password) => {
@@ -259,7 +325,3 @@ export function AdminProvider({ children }) {
 }
 
 export const useAdmin = () => useContext(AdminContext);
-
-
-
-

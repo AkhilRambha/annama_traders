@@ -562,6 +562,29 @@ function ReviewsManager() {
 }
 
 function SettingsManager() {
+  const { addProduct } = useAdmin();
+  // Firebase Data Seeding
+  const [isSeeding, setIsSeeding] = useState(false);
+  const handleSeedDatabase = async () => {
+    setIsSeeding(true);
+    try {
+      const { PRODUCTS } = await import("@/data/products");
+      const { ALL_DRESS_PRODUCTS } = await import("@/data/dressProducts");
+      
+      const allStatic = [...PRODUCTS, ...ALL_DRESS_PRODUCTS];
+      
+      for (const product of allStatic) {
+         await addProduct(product);
+      }
+      alert("Successfully seeded " + allStatic.length + " products to Firebase!");
+    } catch (err) {
+      console.error(err);
+      alert("Error seeding database");
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   const { contactInfo, updateContactInfo } = useAdmin();
   const [info, setInfo] = useState(contactInfo);
 
@@ -596,6 +619,18 @@ function SettingsManager() {
       <div className="mt-8 border-t pt-6">
         <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-primary text-white rounded font-medium hover:bg-primary/90">
           <Save size={18} /> Update Settings
+        </button>
+      </div>
+      
+      <div className="bg-gray-100 p-6 rounded-lg shadow-sm border border-gray-200 mt-12">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Database Operations</h3>
+        <p className="text-sm text-gray-600 mb-4">Click below to upload all your static default products (Sarees and Dresses) to your new Firebase real-time database. (Note: Only do this once to populate your new database!)</p>
+        <button 
+          onClick={handleSeedDatabase} 
+          disabled={isSeeding}
+          className="px-4 py-2 bg-blue-600 text-white rounded font-medium disabled:opacity-50 hover:bg-blue-700 transition"
+        >
+          {isSeeding ? "Seeding Database..." : "Seed Database to Firebase"}
         </button>
       </div>
     </div>
