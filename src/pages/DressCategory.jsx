@@ -2,6 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ProductCard } from "@/components/ecommerce/ProductCard";
 import { useCart } from "@/context/CartContext";
+import { useAdmin } from "@/context/AdminContext";
 import {
   DRESS_PRODUCTS,
   DRESS_CATEGORY_CARDS,
@@ -12,9 +13,10 @@ import {
 const DressCategory = () => {
   const { category } = useParams();
 
+  const { products: allProducts } = useAdmin();
   const meta     = DRESS_CATEGORIES_META[category] || DRESS_CATEGORIES_META["party-wear"];
   const catCard  = DRESS_CATEGORY_CARDS.find(c => c.id === category) || DRESS_CATEGORY_CARDS[0];
-  const products = DRESS_PRODUCTS[category] || DRESS_PRODUCTS["party-wear"];
+  const products = allProducts.filter(p => p.category === meta.name);
 
   return (
     <div className="min-h-screen bg-background pt-24 pb-20">

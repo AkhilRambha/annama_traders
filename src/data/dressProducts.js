@@ -131,3 +131,6 @@ export const DRESS_PRODUCTS = {
 // ─── FLAT LIST (for search) ──────────────────────────────────────────────────
 // All dress products in one array — used by the search system.
 export const ALL_DRESS_PRODUCTS = Object.values(DRESS_PRODUCTS).flat();
+
+// Export dress category names for easy filtering in Admin Panel
+export const dressCategoryNames = Object.values(DRESS_CATEGORIES_META).map(m => m.name);
