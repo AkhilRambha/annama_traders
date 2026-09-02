@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Package, Image as ImageIcon, List, MessageSquare, Settings, LogOut, Plus, Edit2, Trash2, Save, ShieldCheck, Lock, FileText, Tag, Star , Shirt } from "lucide-react";
+import { LayoutDashboard, Package, Image as ImageIcon, List, MessageSquare, Settings, LogOut, Plus, Edit2, Trash2, Save, ShieldCheck, Lock, FileText, Tag, Star, Shirt } from "lucide-react";
 import { useAdmin } from "@/context/AdminContext";
 import { dressCategoryNames } from "@/data/dressProducts";
 
@@ -8,11 +8,11 @@ export default function AdminDashboard() {
   const { isAuthenticated, login, logout } = useAdmin();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("products");
-  
+
   const tabs = [
     { id: "products", name: "Products", icon: Package },
     { id: "dresses", name: "Dresses", icon: Shirt },
-      { id: "categories", name: "Product Categories", icon: List },
+    { id: "categories", name: "Product Categories", icon: List },
     { id: "offers", name: "Combined Offers", icon: Tag },
     { id: "specials", name: "Specials Categories", icon: Star },
     { id: "hero", name: "Hero Images", icon: ImageIcon },
@@ -41,9 +41,8 @@ export default function AdminDashboard() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                  isActive ? "bg-primary text-white" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                }`}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${isActive ? "bg-primary text-white" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  }`}
               >
                 <Icon size={18} />
                 {tab.name}
@@ -52,7 +51,7 @@ export default function AdminDashboard() {
           })}
         </nav>
         <div className="p-4 border-t border-gray-200">
-          <Link 
+          <Link
             to="/"
             className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-md transition-colors"
           >
@@ -64,7 +63,7 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <main className="flex-1 p-8 ml-64 overflow-y-auto min-h-screen relative">
         <div className="absolute top-8 right-8">
-          <button 
+          <button
             onClick={() => logout()}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors border border-red-100"
           >
@@ -110,19 +109,19 @@ function AdminLogin() {
         </div>
         <h1 className="font-serif text-2xl font-bold text-gray-900 mb-2">Admin Access</h1>
         <p className="text-sm text-gray-500 mb-8">Enter your credentials to access the store dashboard.</p>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Username"
               className="w-full border border-gray-300 p-3 rounded-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-center mb-4"
               autoFocus
             />
-            <input 
-              type="password" 
+            <input
+              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
@@ -172,11 +171,11 @@ function CategoriesManager() {
       </div>
 
       <form onSubmit={handleAdd} className="flex gap-4 mb-8 bg-gray-50 p-4 rounded-lg border border-gray-100">
-        <input 
-          type="text" 
+        <input
+          type="text"
           value={newCategory}
           onChange={(e) => setNewCategory(e.target.value)}
-          placeholder="New category name..." 
+          placeholder="New category name..."
           className="flex-1 p-2 border rounded focus:ring-2 focus:ring-primary/20 outline-none"
           required
         />
@@ -189,7 +188,7 @@ function CategoriesManager() {
         {categories.map((cat, i) => (
           <div key={i} className="flex items-center justify-between p-4 border rounded-lg hover:border-primary/30 transition-colors bg-white shadow-sm">
             {editingCat === cat ? (
-              <input 
+              <input
                 type="text"
                 autoFocus
                 value={editValue}
@@ -200,14 +199,14 @@ function CategoriesManager() {
             ) : (
               <span className="font-medium text-gray-800">{cat}</span>
             )}
-            
+
             <div className="flex items-center gap-2">
               {editingCat === cat ? (
                 <button onClick={() => handleSave(cat)} className="text-green-600 hover:bg-green-50 p-2 rounded transition-colors" title="Save">
                   <Save size={18} />
                 </button>
               ) : (
-                <button 
+                <button
                   onClick={() => { setEditingCat(cat); setEditValue(cat); }}
                   className="text-blue-600 hover:bg-blue-50 p-2 rounded transition-colors" title="Edit"
                 >
@@ -285,16 +284,16 @@ function ProductsManager() {
         <div className="mb-8 bg-gray-50 p-6 rounded-md border border-gray-200">
           <h3 className="text-lg font-medium mb-4">{isAdding ? "Add New Product" : "Edit Product"}</h3>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="block text-xs font-bold text-gray-600 mb-1">Name</label><input type="text" className="w-full border p-2 rounded" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
-            <div><label className="block text-xs font-bold text-gray-600 mb-1">Price (₹)</label><input type="number" className="w-full border p-2 rounded" value={formData.price} onChange={e => setFormData({...formData, price: Number(e.target.value)})} /></div>
-            <div><label className="block text-xs font-bold text-gray-600 mb-1">Category</label><select className="w-full border p-2 rounded" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>{categories.map((c, i) => { const cName = typeof c === 'string' ? c : (c.name || c.id || `cat-${i}`); return <option key={cName} value={cName}>{cName}</option>})}</select></div>
-            <div><label className="block text-xs font-bold text-gray-600 mb-1">Image URL</label><input type="text" className="w-full border p-2 rounded" value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} placeholder="https://..." /></div>
-            <div><label className="block text-xs font-bold text-gray-600 mb-1">Stock Quantity</label><input type="number" className="w-full border p-2 rounded" value={formData.stock || 0} onChange={e => setFormData({...formData, stock: Number(e.target.value)})} /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Name</label><input type="text" className="w-full border p-2 rounded" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Price (₹)</label><input type="number" className="w-full border p-2 rounded" value={formData.price} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Category</label><select className="w-full border p-2 rounded" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>{categories.map((c, i) => { const cName = typeof c === 'string' ? c : (c.name || c.id || `cat-${i}`); return <option key={cName} value={cName}>{cName}</option> })}</select></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Image URL</label><input type="text" className="w-full border p-2 rounded" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} placeholder="https://..." /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Stock Quantity</label><input type="number" className="w-full border p-2 rounded" value={formData.stock || 0} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} /></div>
             <div className="flex items-center gap-4 mt-6">
-              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={formData.isNew} onChange={e => setFormData({...formData, isNew: e.target.checked})} /> New Arrival</label>
-              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={formData.isFeatured} onChange={e => setFormData({...formData, isFeatured: e.target.checked})} /> Featured Masterpiece</label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={formData.isNew} onChange={e => setFormData({ ...formData, isNew: e.target.checked })} /> New Arrival</label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={formData.isFeatured} onChange={e => setFormData({ ...formData, isFeatured: e.target.checked })} /> Featured Masterpiece</label>
             </div>
-            <div className="col-span-2"><label className="block text-xs font-bold text-gray-600 mb-1">Description</label><textarea rows={3} className="w-full border p-2 rounded" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} /></div>
+            <div className="col-span-2"><label className="block text-xs font-bold text-gray-600 mb-1">Description</label><textarea rows={3} className="w-full border p-2 rounded" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} /></div>
           </div>
           <div className="mt-4 flex justify-end gap-3">
             <button onClick={() => setEditingId(null)} className="px-4 py-2 border text-gray-600 rounded text-sm">Cancel</button>
@@ -389,16 +388,16 @@ function DressesManager() {
         <div className="mb-8 bg-gray-50 p-6 rounded-md border border-gray-200">
           <h3 className="text-lg font-medium mb-4">{isAdding ? "Add New Product" : "Edit Product"}</h3>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="block text-xs font-bold text-gray-600 mb-1">Name</label><input type="text" className="w-full border p-2 rounded" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
-            <div><label className="block text-xs font-bold text-gray-600 mb-1">Price (₹)</label><input type="number" className="w-full border p-2 rounded" value={formData.price} onChange={e => setFormData({...formData, price: Number(e.target.value)})} /></div>
-            <div><label className="block text-xs font-bold text-gray-600 mb-1">Category</label><select className="w-full border p-2 rounded" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>{dressCategoryNames.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-            <div><label className="block text-xs font-bold text-gray-600 mb-1">Image URL</label><input type="text" className="w-full border p-2 rounded" value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} placeholder="https://..." /></div>
-            <div><label className="block text-xs font-bold text-gray-600 mb-1">Stock Quantity</label><input type="number" className="w-full border p-2 rounded" value={formData.stock || 0} onChange={e => setFormData({...formData, stock: Number(e.target.value)})} /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Name</label><input type="text" className="w-full border p-2 rounded" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Price (₹)</label><input type="number" className="w-full border p-2 rounded" value={formData.price} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Category</label><select className="w-full border p-2 rounded" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>{dressCategoryNames.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Image URL</label><input type="text" className="w-full border p-2 rounded" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} placeholder="https://..." /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Stock Quantity</label><input type="number" className="w-full border p-2 rounded" value={formData.stock || 0} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} /></div>
             <div className="flex items-center gap-4 mt-6">
-              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={formData.isNew} onChange={e => setFormData({...formData, isNew: e.target.checked})} /> New Arrival</label>
-              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={formData.isFeatured} onChange={e => setFormData({...formData, isFeatured: e.target.checked})} /> Featured Masterpiece</label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={formData.isNew} onChange={e => setFormData({ ...formData, isNew: e.target.checked })} /> New Arrival</label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={formData.isFeatured} onChange={e => setFormData({ ...formData, isFeatured: e.target.checked })} /> Featured Masterpiece</label>
             </div>
-            <div className="col-span-2"><label className="block text-xs font-bold text-gray-600 mb-1">Description</label><textarea rows={3} className="w-full border p-2 rounded" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} /></div>
+            <div className="col-span-2"><label className="block text-xs font-bold text-gray-600 mb-1">Description</label><textarea rows={3} className="w-full border p-2 rounded" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} /></div>
           </div>
           <div className="mt-4 flex justify-end gap-3">
             <button onClick={() => setEditingId(null)} className="px-4 py-2 border text-gray-600 rounded text-sm">Cancel</button>
@@ -454,7 +453,7 @@ function HeroManager() {
     <div className="p-6">
       <h2 className="text-2xl font-serif text-gray-900 mb-6">Manage Hero Images</h2>
       <p className="text-sm text-gray-500 mb-6">Provide 3 image URLs to display in the continuous rotating carousel on the homepage.</p>
-      
+
       <div className="space-y-6">
         {images.map((img, i) => (
           <div key={i} className="flex gap-4 items-start">
@@ -463,39 +462,39 @@ function HeroManager() {
             </div>
             <div className="flex-1">
               <label className="block text-xs font-bold text-gray-600 mb-1">Image {i + 1} URL</label>
-              <input 
-                type="text" 
-                className="w-full border p-2 rounded" 
-                value={img} 
+              <input
+                type="text"
+                className="w-full border p-2 rounded"
+                value={img}
                 onChange={(e) => {
                   const newImgs = [...images];
                   newImgs[i] = e.target.value;
                   setImages(newImgs);
-                }} 
+                }}
               />
             </div>
           </div>
         ))}
       </div>
-      
+
       <div className="mt-10 border-t pt-8">
         <h3 className="text-xl font-serif text-gray-900 mb-6">Manage Hero Stats</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <label className="block text-xs font-bold text-gray-600 mb-1">Sarees Curated (e.g. 500+)</label>
-            <input type="text" className="w-full border p-2 rounded" value={stats.sareesCurated} onChange={e => setStats({...stats, sareesCurated: e.target.value})} />
+            <input type="text" className="w-full border p-2 rounded" value={stats.sareesCurated} onChange={e => setStats({ ...stats, sareesCurated: e.target.value })} />
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-600 mb-1">Avg. Experience (e.g. 5)</label>
-            <input type="text" className="w-full border p-2 rounded" value={stats.avgExperience} onChange={e => setStats({...stats, avgExperience: e.target.value})} />
+            <input type="text" className="w-full border p-2 rounded" value={stats.avgExperience} onChange={e => setStats({ ...stats, avgExperience: e.target.value })} />
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-600 mb-1">Showroom Trips (e.g. 0)</label>
-            <input type="text" className="w-full border p-2 rounded" value={stats.showroomTrips} onChange={e => setStats({...stats, showroomTrips: e.target.value})} />
+            <input type="text" className="w-full border p-2 rounded" value={stats.showroomTrips} onChange={e => setStats({ ...stats, showroomTrips: e.target.value })} />
           </div>
         </div>
       </div>
-      
+
       <div className="mt-8 border-t pt-6">
         <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-primary text-white rounded font-medium hover:bg-primary/90">
           <Save size={18} /> Update Hero Section
@@ -528,12 +527,12 @@ function ReviewsManager() {
         <div className="mb-8 bg-gray-50 p-6 rounded-md border border-gray-200">
           <h3 className="text-lg font-medium mb-4">{isAdding ? "Add New Review" : "Edit Review"}</h3>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="block text-xs font-bold text-gray-600 mb-1">Customer Name</label><input type="text" className="w-full border p-2 rounded" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
-            <div><label className="block text-xs font-bold text-gray-600 mb-1">Location</label><input type="text" className="w-full border p-2 rounded" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} /></div>
-            <div><label className="block text-xs font-bold text-gray-600 mb-1">Rating (1-5)</label><input type="number" min="1" max="5" className="w-full border p-2 rounded" value={formData.rating} onChange={e => setFormData({...formData, rating: Number(e.target.value)})} /></div>
-            <div><label className="block text-xs font-bold text-gray-600 mb-1">Type (text/photo/video)</label><select className="w-full border p-2 rounded" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}><option value="text">Text</option><option value="photo">Photo</option><option value="video">Video</option></select></div>
-            {formData.type !== "text" && <div className="col-span-2"><label className="block text-xs font-bold text-gray-600 mb-1">Image/Video Thumbnail URL</label><input type="text" className="w-full border p-2 rounded" value={formData.thumbnail} onChange={e => setFormData({...formData, thumbnail: e.target.value})} placeholder="https://..." /></div>}
-            <div className="col-span-2"><label className="block text-xs font-bold text-gray-600 mb-1">Review Content</label><textarea rows={3} className="w-full border p-2 rounded" value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Customer Name</label><input type="text" className="w-full border p-2 rounded" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Location</label><input type="text" className="w-full border p-2 rounded" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Rating (1-5)</label><input type="number" min="1" max="5" className="w-full border p-2 rounded" value={formData.rating} onChange={e => setFormData({ ...formData, rating: Number(e.target.value) })} /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Type (text/photo/video)</label><select className="w-full border p-2 rounded" value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value })}><option value="text">Text</option><option value="photo">Photo</option><option value="video">Video</option></select></div>
+            {formData.type !== "text" && <div className="col-span-2"><label className="block text-xs font-bold text-gray-600 mb-1">Image/Video Thumbnail URL</label><input type="text" className="w-full border p-2 rounded" value={formData.thumbnail} onChange={e => setFormData({ ...formData, thumbnail: e.target.value })} placeholder="https://..." /></div>}
+            <div className="col-span-2"><label className="block text-xs font-bold text-gray-600 mb-1">Review Content</label><textarea rows={3} className="w-full border p-2 rounded" value={formData.content} onChange={e => setFormData({ ...formData, content: e.target.value })} /></div>
           </div>
           <div className="mt-4 flex justify-end gap-3">
             <button onClick={() => setEditingId(null)} className="px-4 py-2 border text-gray-600 rounded text-sm">Cancel</button>
@@ -547,7 +546,7 @@ function ReviewsManager() {
           <div key={r.id} className="p-4 border rounded-md flex justify-between items-start hover:bg-gray-50">
             <div>
               <div className="font-bold text-gray-900">{r.name} <span className="text-sm font-normal text-gray-500 ml-2">{r.location}</span></div>
-              <div className="text-yellow-500 text-sm my-1">{"â˜…".repeat(r.rating)}{"â˜†".repeat(5-r.rating)}</div>
+              <div className="text-yellow-500 text-sm my-1">{"â˜…".repeat(r.rating)}{"â˜†".repeat(5 - r.rating)}</div>
               <p className="text-gray-600 text-sm mt-2 italic">"{r.content}"</p>
             </div>
             <div className="flex gap-2 shrink-0">
@@ -563,19 +562,19 @@ function ReviewsManager() {
 
 function SettingsManager() {
   const { addProduct, changePassword, adminCredentials, generateOtp, verifyOtp, updateContactInfo, contactInfo } = useAdmin();
-  
+
   const [info, setInfo] = useState(contactInfo || { phone: "", email: "", address: "", hours: "" });
   const [passData, setPassData] = useState({ current: '', newPass: '', confirm: '' });
-  
+
   // OTP State
   const [otpSent, setOtpSent] = useState(false);
   const [inputOtp, setInputOtp] = useState("");
   const [isSending, setIsSending] = useState(false);
 
   // EmailJS Configuration (PLACEHOLDERS)
-  const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";
-  const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
-  const EMAILJS_PUBLIC_KEY = "YOUR_PUBLIC_KEY";
+  const EMAILJS_SERVICE_ID = "service_q5c935p";
+  const EMAILJS_TEMPLATE_ID = "template_v71q9f7";
+  const EMAILJS_PUBLIC_KEY = "q4xO_P9C7WB1E_otP";
 
   const handleSave = () => {
     updateContactInfo(info);
@@ -586,7 +585,7 @@ function SettingsManager() {
     if (passData.current !== adminCredentials.password) return alert("Current password is incorrect");
     if (passData.newPass !== passData.confirm) return alert("New passwords do not match");
     if (passData.newPass.length < 6) return alert("Password must be at least 6 characters");
-    
+
     setIsSending(true);
     const otp = await generateOtp();
     if (!otp) {
@@ -603,9 +602,9 @@ function SettingsManager() {
         await emailjs.send(
           EMAILJS_SERVICE_ID,
           EMAILJS_TEMPLATE_ID,
-          { 
-            to_email: info.email || "admin@example.com", 
-            otp_code: otp 
+          {
+            to_email: info.email || "admin@example.com",
+            otp_code: otp
           },
           EMAILJS_PUBLIC_KEY
         );
@@ -639,51 +638,51 @@ function SettingsManager() {
   return (
     <div className="p-6">
       <h2 className="text-2xl font-serif text-gray-900 mb-6">Site Settings (Contact Info)</h2>
-      
+
       <div className="space-y-4 max-w-xl">
         <div>
           <label className="block text-xs font-bold text-gray-600 mb-1">WhatsApp / Phone Number</label>
-          <input type="text" className="w-full border p-2 rounded" value={info.phone} onChange={e => setInfo({...info, phone: e.target.value})} />
+          <input type="text" className="w-full border p-2 rounded" value={info.phone} onChange={e => setInfo({ ...info, phone: e.target.value })} />
         </div>
         <div>
           <label className="block text-xs font-bold text-gray-600 mb-1">Admin Email Address (For OTPs)</label>
-          <input type="text" className="w-full border p-2 rounded" value={info.email} onChange={e => setInfo({...info, email: e.target.value})} />
+          <input type="text" className="w-full border p-2 rounded" value={info.email} onChange={e => setInfo({ ...info, email: e.target.value })} />
         </div>
         <div>
           <label className="block text-xs font-bold text-gray-600 mb-1">Store Address</label>
-          <input type="text" className="w-full border p-2 rounded" value={info.address} onChange={e => setInfo({...info, address: e.target.value})} />
+          <input type="text" className="w-full border p-2 rounded" value={info.address} onChange={e => setInfo({ ...info, address: e.target.value })} />
         </div>
         <div>
           <label className="block text-xs font-bold text-gray-600 mb-1">Business Hours</label>
-          <input type="text" className="w-full border p-2 rounded" value={info.hours} onChange={e => setInfo({...info, hours: e.target.value})} />
+          <input type="text" className="w-full border p-2 rounded" value={info.hours} onChange={e => setInfo({ ...info, hours: e.target.value })} />
         </div>
       </div>
-      
+
       <div className="mt-8 border-t pt-6">
         <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-primary text-white rounded font-medium hover:bg-primary/90">
           Update Contact Info
         </button>
       </div>
-      
+
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mt-12">
         <h3 className="text-lg font-bold text-gray-900 mb-4">Security & Password</h3>
-        
+
         {!otpSent ? (
           <div className="space-y-4 max-w-xl">
             <div>
               <label className="block text-xs font-bold text-gray-600 mb-1">Current Password</label>
-              <input type="password" placeholder="Enter current password" className="w-full border p-2 rounded" value={passData.current} onChange={e => setPassData({...passData, current: e.target.value})} />
+              <input type="password" placeholder="Enter current password" className="w-full border p-2 rounded" value={passData.current} onChange={e => setPassData({ ...passData, current: e.target.value })} />
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-600 mb-1">New Password</label>
-              <input type="password" placeholder="Enter new password" className="w-full border p-2 rounded" value={passData.newPass} onChange={e => setPassData({...passData, newPass: e.target.value})} />
+              <input type="password" placeholder="Enter new password" className="w-full border p-2 rounded" value={passData.newPass} onChange={e => setPassData({ ...passData, newPass: e.target.value })} />
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-600 mb-1">Confirm New Password</label>
-              <input type="password" placeholder="Confirm new password" className="w-full border p-2 rounded" value={passData.confirm} onChange={e => setPassData({...passData, confirm: e.target.value})} />
+              <input type="password" placeholder="Confirm new password" className="w-full border p-2 rounded" value={passData.confirm} onChange={e => setPassData({ ...passData, confirm: e.target.value })} />
             </div>
-            <button 
-              onClick={handleRequestOtp} 
+            <button
+              onClick={handleRequestOtp}
               disabled={isSending}
               className="mt-2 px-4 py-2 bg-gray-900 text-white rounded font-medium hover:bg-black transition disabled:opacity-50"
             >
@@ -711,10 +710,10 @@ function SettingsManager() {
 
       <div className="bg-gray-100 p-6 rounded-lg shadow-sm border border-gray-200 mt-12">
         <h3 className="text-lg font-bold text-gray-900 mb-4">Database Operations</h3>
-<h3 className="text-lg font-bold text-gray-900 mb-4">Database Operations</h3>
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Database Operations</h3>
         <p className="text-sm text-gray-600 mb-4">Click below to upload all your static default products (Sarees and Dresses) to your new Firebase real-time database. (Note: Only do this once to populate your new database!)</p>
-        <button 
-          onClick={handleSeedDatabase} 
+        <button
+          onClick={handleSeedDatabase}
           disabled={isSeeding}
           className="px-4 py-2 bg-blue-600 text-white rounded font-medium disabled:opacity-50 hover:bg-blue-700 transition"
         >
@@ -737,28 +736,28 @@ function LegalManager() {
   return (
     <div className="p-6">
       <h2 className="text-2xl font-serif text-gray-900 mb-6">Manage Legal Pages</h2>
-      
+
       <div className="space-y-8">
         <div>
           <label className="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wider">Privacy Policy</label>
-          <textarea 
-            rows={10} 
-            className="w-full border p-4 rounded text-sm font-serif leading-relaxed" 
-            value={pages.privacy} 
-            onChange={e => setPages({...pages, privacy: e.target.value})} 
+          <textarea
+            rows={10}
+            className="w-full border p-4 rounded text-sm font-serif leading-relaxed"
+            value={pages.privacy}
+            onChange={e => setPages({ ...pages, privacy: e.target.value })}
           />
         </div>
         <div>
           <label className="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wider">Terms of Service</label>
-          <textarea 
-            rows={10} 
-            className="w-full border p-4 rounded text-sm font-serif leading-relaxed" 
-            value={pages.terms} 
-            onChange={e => setPages({...pages, terms: e.target.value})} 
+          <textarea
+            rows={10}
+            className="w-full border p-4 rounded text-sm font-serif leading-relaxed"
+            value={pages.terms}
+            onChange={e => setPages({ ...pages, terms: e.target.value })}
           />
         </div>
       </div>
-      
+
       <div className="mt-8 border-t pt-6">
         <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-primary text-white rounded font-medium hover:bg-primary/90">
           <Save size={18} /> Update Legal Pages
@@ -780,7 +779,7 @@ function OffersManager() {
 
   const handleSave = () => {
     if (!formData.title || !formData.image) return;
-    
+
     if (editingId) {
       updateOffer(editingId, { ...formData, id: editingId });
     } else {
@@ -802,11 +801,11 @@ function OffersManager() {
       <div className="bg-gray-50 p-6 rounded-lg mb-8 border border-gray-200">
         <h3 className="font-bold mb-4">{editingId ? "Edit Offer" : "Add New Offer"}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input type="text" placeholder="Offer Title" className="border p-2 rounded" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
-          <input type="text" placeholder="Image URL (e.g. https://images.unsplash.com/...)" className="border p-2 rounded" value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} />
-          <textarea placeholder="Offer Description" className="border p-2 rounded md:col-span-2" rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+          <input type="text" placeholder="Offer Title" className="border p-2 rounded" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
+          <input type="text" placeholder="Image URL (e.g. https://images.unsplash.com/...)" className="border p-2 rounded" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} />
+          <textarea placeholder="Offer Description" className="border p-2 rounded md:col-span-2" rows={3} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
           <div className="flex items-center gap-2">
-            <input type="checkbox" id="isActive" checked={formData.isActive} onChange={e => setFormData({...formData, isActive: e.target.checked})} />
+            <input type="checkbox" id="isActive" checked={formData.isActive} onChange={e => setFormData({ ...formData, isActive: e.target.checked })} />
             <label htmlFor="isActive" className="text-sm font-medium">Offer is Active</label>
           </div>
         </div>
@@ -847,10 +846,10 @@ function SpecialsManager() {
 
   const handleSave = () => {
     if (!formData.name || !formData.subtitle) return;
-    
+
     // Generate an ID if it's new
     const idToSave = formData.id || formData.name.toLowerCase().replace(/\s+/g, '-');
-    
+
     if (editingId) {
       updateSpecialCategory(editingId, { ...formData, id: idToSave });
     } else {
@@ -877,19 +876,19 @@ function SpecialsManager() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-bold text-gray-600 mb-1">ID (used for matching products)</label>
-            <input type="text" placeholder="e.g. Kanchi Pattu" className="w-full border p-2 rounded" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} />
+            <input type="text" placeholder="e.g. Kanchi Pattu" className="w-full border p-2 rounded" value={formData.id} onChange={e => setFormData({ ...formData, id: e.target.value })} />
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-600 mb-1">Display Name</label>
-            <input type="text" placeholder="e.g. Kanchi Pattu" className="w-full border p-2 rounded" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+            <input type="text" placeholder="e.g. Kanchi Pattu" className="w-full border p-2 rounded" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
           </div>
           <div className="md:col-span-2">
             <label className="block text-xs font-bold text-gray-600 mb-1">Subtitle (Gold Script)</label>
-            <input type="text" placeholder="e.g. The temple weave" className="w-full border p-2 rounded" value={formData.subtitle} onChange={e => setFormData({...formData, subtitle: e.target.value})} />
+            <input type="text" placeholder="e.g. The temple weave" className="w-full border p-2 rounded" value={formData.subtitle} onChange={e => setFormData({ ...formData, subtitle: e.target.value })} />
           </div>
           <div className="md:col-span-2">
             <label className="block text-xs font-bold text-gray-600 mb-1">Description</label>
-            <textarea placeholder="Category description..." className="w-full border p-2 rounded" rows={3} value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} />
+            <textarea placeholder="Category description..." className="w-full border p-2 rounded" rows={3} value={formData.desc} onChange={e => setFormData({ ...formData, desc: e.target.value })} />
           </div>
         </div>
         <button onClick={handleSave} className="mt-4 flex items-center gap-2 px-6 py-2 bg-primary text-white rounded font-medium hover:bg-primary/90">
