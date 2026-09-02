@@ -562,36 +562,78 @@ function ReviewsManager() {
 }
 
 function SettingsManager() {
-  const { addProduct, changePassword, adminCredentials } = useAdmin();
+  const { addProduct, changePassword, adminCredentials, generateOtp, verifyOtp, updateContactInfo, contactInfo } = useAdmin();
+  
+  const [info, setInfo] = useState(contactInfo || { phone: "", email: "", address: "", hours: "" });
   const [passData, setPassData] = useState({ current: '', newPass: '', confirm: '' });
-  // Firebase Data Seeding
-  const [isSeeding, setIsSeeding] = useState(false);
-  const handleSeedDatabase = async () => {
-    setIsSeeding(true);
-    try {
-      const { PRODUCTS } = await import("@/data/products");
-      const { ALL_DRESS_PRODUCTS } = await import("@/data/dressProducts");
-      
-      const allStatic = [...PRODUCTS, ...ALL_DRESS_PRODUCTS];
-      
-      for (const product of allStatic) {
-         await addProduct(product);
-      }
-      alert("Successfully seeded " + allStatic.length + " products to Firebase!");
-    } catch (err) {
-      console.error(err);
-      alert("Error seeding database");
-    } finally {
-      setIsSeeding(false);
-    }
-  };
+  
+  // OTP State
+  const [otpSent, setOtpSent] = useState(false);
+  const [inputOtp, setInputOtp] = useState("");
+  const [isSending, setIsSending] = useState(false);
 
-  const { contactInfo, updateContactInfo } = useAdmin();
-  const [info, setInfo] = useState(contactInfo);
+  // EmailJS Configuration (PLACEHOLDERS)
+  const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";
+  const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
+  const EMAILJS_PUBLIC_KEY = "YOUR_PUBLIC_KEY";
 
   const handleSave = () => {
     updateContactInfo(info);
     alert("Settings updated successfully!");
+  };
+
+  const handleRequestOtp = async () => {
+    if (passData.current !== adminCredentials.password) return alert("Current password is incorrect");
+    if (passData.newPass !== passData.confirm) return alert("New passwords do not match");
+    if (passData.newPass.length < 6) return alert("Password must be at least 6 characters");
+    
+    setIsSending(true);
+    const otp = await generateOtp();
+    if (!otp) {
+      alert("Failed to generate OTP");
+      setIsSending(false);
+      return;
+    }
+
+    try {
+      if (EMAILJS_SERVICE_ID === "YOUR_SERVICE_ID") {
+        console.warn("EmailJS is not configured yet! The OTP is:", otp);
+        alert("EmailJS keys are missing! Check the browser console to see the OTP for testing.");
+      } else {
+        await emailjs.send(
+          EMAILJS_SERVICE_ID,
+          EMAILJS_TEMPLATE_ID,
+          { 
+            to_email: info.email || "admin@example.com", 
+            otp_code: otp 
+          },
+          EMAILJS_PUBLIC_KEY
+        );
+      }
+      setOtpSent(true);
+      alert("An OTP has been sent to the main admin's email!");
+    } catch (err) {
+      console.error("EmailJS Error:", err);
+      alert("Failed to send OTP email.");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleVerifyAndChange = async () => {
+    if (verifyOtp(inputOtp)) {
+      const success = await changePassword(passData.newPass);
+      if (success) {
+        alert("Password changed successfully!");
+        setPassData({ current: '', newPass: '', confirm: '' });
+        setInputOtp("");
+        setOtpSent(false);
+      } else {
+        alert("Failed to change password in database.");
+      }
+    } else {
+      alert("Invalid or expired OTP!");
+    }
   };
 
   return (
@@ -604,7 +646,7 @@ function SettingsManager() {
           <input type="text" className="w-full border p-2 rounded" value={info.phone} onChange={e => setInfo({...info, phone: e.target.value})} />
         </div>
         <div>
-          <label className="block text-xs font-bold text-gray-600 mb-1">Email Address</label>
+          <label className="block text-xs font-bold text-gray-600 mb-1">Admin Email Address (For OTPs)</label>
           <input type="text" className="w-full border p-2 rounded" value={info.email} onChange={e => setInfo({...info, email: e.target.value})} />
         </div>
         <div>
@@ -619,49 +661,57 @@ function SettingsManager() {
       
       <div className="mt-8 border-t pt-6">
         <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-primary text-white rounded font-medium hover:bg-primary/90">
-          <Save size={18} /> Update Settings
+          Update Contact Info
         </button>
       </div>
       
-      
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mt-12">
         <h3 className="text-lg font-bold text-gray-900 mb-4">Security & Password</h3>
-        <div className="space-y-4 max-w-xl">
-          <div>
-            <label className="block text-xs font-bold text-gray-600 mb-1">Current Password</label>
-            <input type="password" placeholder="Enter current password" className="w-full border p-2 rounded" value={passData.current} onChange={e => setPassData({...passData, current: e.target.value})} />
+        
+        {!otpSent ? (
+          <div className="space-y-4 max-w-xl">
+            <div>
+              <label className="block text-xs font-bold text-gray-600 mb-1">Current Password</label>
+              <input type="password" placeholder="Enter current password" className="w-full border p-2 rounded" value={passData.current} onChange={e => setPassData({...passData, current: e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-600 mb-1">New Password</label>
+              <input type="password" placeholder="Enter new password" className="w-full border p-2 rounded" value={passData.newPass} onChange={e => setPassData({...passData, newPass: e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-600 mb-1">Confirm New Password</label>
+              <input type="password" placeholder="Confirm new password" className="w-full border p-2 rounded" value={passData.confirm} onChange={e => setPassData({...passData, confirm: e.target.value})} />
+            </div>
+            <button 
+              onClick={handleRequestOtp} 
+              disabled={isSending}
+              className="mt-2 px-4 py-2 bg-gray-900 text-white rounded font-medium hover:bg-black transition disabled:opacity-50"
+            >
+              {isSending ? "Sending OTP..." : "Request OTP to Change Password"}
+            </button>
           </div>
-          <div>
-            <label className="block text-xs font-bold text-gray-600 mb-1">New Password</label>
-            <input type="password" placeholder="Enter new password" className="w-full border p-2 rounded" value={passData.newPass} onChange={e => setPassData({...passData, newPass: e.target.value})} />
+        ) : (
+          <div className="space-y-4 max-w-xl bg-orange-50 p-4 rounded border border-orange-100">
+            <h4 className="font-bold text-orange-900">Enter OTP</h4>
+            <p className="text-sm text-orange-800 mb-2">We sent a 6-digit OTP to the main admin's email ({info.email}). Please enter it below to authorize the password change.</p>
+            <div>
+              <input type="text" placeholder="e.g. 123456" className="w-full border p-2 rounded font-mono text-center text-lg tracking-widest" value={inputOtp} onChange={e => setInputOtp(e.target.value)} />
+            </div>
+            <div className="flex gap-2">
+              <button onClick={handleVerifyAndChange} className="px-4 py-2 bg-green-600 text-white rounded font-medium hover:bg-green-700 transition">
+                Verify & Change Password
+              </button>
+              <button onClick={() => setOtpSent(false)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded font-medium hover:bg-gray-300 transition">
+                Cancel
+              </button>
+            </div>
           </div>
-          <div>
-            <label className="block text-xs font-bold text-gray-600 mb-1">Confirm New Password</label>
-            <input type="password" placeholder="Confirm new password" className="w-full border p-2 rounded" value={passData.confirm} onChange={e => setPassData({...passData, confirm: e.target.value})} />
-          </div>
-          <button 
-            onClick={async () => {
-              if (passData.current !== adminCredentials.password) return alert("Current password is incorrect");
-              if (passData.newPass !== passData.confirm) return alert("New passwords do not match");
-              if (passData.newPass.length < 6) return alert("Password must be at least 6 characters");
-              
-              const success = await changePassword(passData.newPass);
-              if (success) {
-                alert("Password changed successfully!");
-                setPassData({ current: '', newPass: '', confirm: '' });
-              } else {
-                alert("Failed to change password");
-              }
-            }} 
-            className="mt-2 px-4 py-2 bg-gray-900 text-white rounded font-medium hover:bg-black transition"
-          >
-            Change Password
-          </button>
-        </div>
+        )}
       </div>
 
       <div className="bg-gray-100 p-6 rounded-lg shadow-sm border border-gray-200 mt-12">
         <h3 className="text-lg font-bold text-gray-900 mb-4">Database Operations</h3>
+<h3 className="text-lg font-bold text-gray-900 mb-4">Database Operations</h3>
         <p className="text-sm text-gray-600 mb-4">Click below to upload all your static default products (Sarees and Dresses) to your new Firebase real-time database. (Note: Only do this once to populate your new database!)</p>
         <button 
           onClick={handleSeedDatabase} 

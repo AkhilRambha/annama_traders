@@ -313,9 +313,25 @@ export function AdminProvider({ children }) {
     return false;
   };
 
+  const generateOtp = async () => {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    try {
+      await setDoc(doc(db, "settings", "security"), { ...adminCredentials, pendingOtp: otp });
+      setAdminCredentials({ ...adminCredentials, pendingOtp: otp });
+      return otp;
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+  };
+
+  const verifyOtp = (inputOtp) => {
+    return adminCredentials.pendingOtp && inputOtp === adminCredentials.pendingOtp;
+  };
+
   const changePassword = async (newPassword) => {
     try {
-      await setDoc(doc(db, "settings", "security"), { username: adminCredentials.username, password: newPassword });
+      await setDoc(doc(db, "settings", "security"), { username: adminCredentials.username, password: newPassword, pendingOtp: null });
       setAdminCredentials({ ...adminCredentials, password: newPassword });
       return true;
     } catch (e) {
@@ -340,7 +356,7 @@ export function AdminProvider({ children }) {
       offers, addOffer, updateOffer, deleteOffer,
       heroStats, updateHeroStats,
       specialsCategories, addSpecialCategory, updateSpecialCategory, deleteSpecialCategory,
-      isAuthenticated, login, logout, changePassword, adminCredentials
+      isAuthenticated, login, logout, changePassword, adminCredentials, generateOtp, verifyOtp
     }}>
       {children}
     </AdminContext.Provider>
