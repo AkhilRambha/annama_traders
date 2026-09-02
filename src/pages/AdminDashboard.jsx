@@ -261,6 +261,28 @@ function ProductsManager() {
     });
   };
 
+  // Firebase Data Seeding
+  const [isSeeding, setIsSeeding] = useState(false);
+  const handleSeedDatabase = async () => {
+    setIsSeeding(true);
+    try {
+      const { PRODUCTS } = await import("@/data/products");
+      const { ALL_DRESS_PRODUCTS } = await import("@/data/dressProducts");
+      
+      const allStatic = [...PRODUCTS, ...ALL_DRESS_PRODUCTS];
+      
+      for (const product of allStatic) {
+         await addProduct(product);
+      }
+      alert("Successfully seeded " + allStatic.length + " products to Firebase!");
+    } catch (err) {
+      console.error(err);
+      alert("Error seeding database");
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   const handleSave = () => {
     if (isAdding) {
       addProduct(formData);
@@ -365,6 +387,28 @@ function DressesManager() {
     });
   };
 
+  // Firebase Data Seeding
+  const [isSeeding, setIsSeeding] = useState(false);
+  const handleSeedDatabase = async () => {
+    setIsSeeding(true);
+    try {
+      const { PRODUCTS } = await import("@/data/products");
+      const { ALL_DRESS_PRODUCTS } = await import("@/data/dressProducts");
+      
+      const allStatic = [...PRODUCTS, ...ALL_DRESS_PRODUCTS];
+      
+      for (const product of allStatic) {
+         await addProduct(product);
+      }
+      alert("Successfully seeded " + allStatic.length + " products to Firebase!");
+    } catch (err) {
+      console.error(err);
+      alert("Error seeding database");
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   const handleSave = () => {
     if (isAdding) {
       addProduct(formData);
@@ -443,6 +487,28 @@ function HeroManager() {
   const [images, setImages] = useState(heroImages);
   const [stats, setStats] = useState(heroStats || { sareesCurated: "500+", avgExperience: "5", showroomTrips: "0" });
 
+  // Firebase Data Seeding
+  const [isSeeding, setIsSeeding] = useState(false);
+  const handleSeedDatabase = async () => {
+    setIsSeeding(true);
+    try {
+      const { PRODUCTS } = await import("@/data/products");
+      const { ALL_DRESS_PRODUCTS } = await import("@/data/dressProducts");
+      
+      const allStatic = [...PRODUCTS, ...ALL_DRESS_PRODUCTS];
+      
+      for (const product of allStatic) {
+         await addProduct(product);
+      }
+      alert("Successfully seeded " + allStatic.length + " products to Firebase!");
+    } catch (err) {
+      console.error(err);
+      alert("Error seeding database");
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   const handleSave = () => {
     updateHeroImages(images);
     updateHeroStats(stats);
@@ -512,6 +578,28 @@ function ReviewsManager() {
 
   const handleEdit = (r) => { setEditingId(r.id); setFormData(r); setIsAdding(false); };
   const handleAdd = () => { setEditingId("new"); setIsAdding(true); setFormData({ id: Date.now(), name: "", location: "", content: "", rating: 5, type: "text", thumbnail: "" }); };
+  // Firebase Data Seeding
+  const [isSeeding, setIsSeeding] = useState(false);
+  const handleSeedDatabase = async () => {
+    setIsSeeding(true);
+    try {
+      const { PRODUCTS } = await import("@/data/products");
+      const { ALL_DRESS_PRODUCTS } = await import("@/data/dressProducts");
+      
+      const allStatic = [...PRODUCTS, ...ALL_DRESS_PRODUCTS];
+      
+      for (const product of allStatic) {
+         await addProduct(product);
+      }
+      alert("Successfully seeded " + allStatic.length + " products to Firebase!");
+    } catch (err) {
+      console.error(err);
+      alert("Error seeding database");
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   const handleSave = () => { isAdding ? addReview(formData) : updateReview(formData.id, formData); setEditingId(null); setIsAdding(false); };
 
   return (
@@ -575,6 +663,28 @@ function SettingsManager() {
   const EMAILJS_SERVICE_ID = "service_q5c935p";
   const EMAILJS_TEMPLATE_ID = "template_v71q9f7";
   const EMAILJS_PUBLIC_KEY = "q4xO_P9C7WB1E_otP";
+
+  // Firebase Data Seeding
+  const [isSeeding, setIsSeeding] = useState(false);
+  const handleSeedDatabase = async () => {
+    setIsSeeding(true);
+    try {
+      const { PRODUCTS } = await import("@/data/products");
+      const { ALL_DRESS_PRODUCTS } = await import("@/data/dressProducts");
+      
+      const allStatic = [...PRODUCTS, ...ALL_DRESS_PRODUCTS];
+      
+      for (const product of allStatic) {
+         await addProduct(product);
+      }
+      alert("Successfully seeded " + allStatic.length + " products to Firebase!");
+    } catch (err) {
+      console.error(err);
+      alert("Error seeding database");
+    } finally {
+      setIsSeeding(false);
+    }
+  };
 
   const handleSave = () => {
     updateContactInfo(info);
@@ -728,6 +838,28 @@ function LegalManager() {
   const { legalPages, updateLegalPages } = useAdmin();
   const [pages, setPages] = useState(legalPages);
 
+  // Firebase Data Seeding
+  const [isSeeding, setIsSeeding] = useState(false);
+  const handleSeedDatabase = async () => {
+    setIsSeeding(true);
+    try {
+      const { PRODUCTS } = await import("@/data/products");
+      const { ALL_DRESS_PRODUCTS } = await import("@/data/dressProducts");
+      
+      const allStatic = [...PRODUCTS, ...ALL_DRESS_PRODUCTS];
+      
+      for (const product of allStatic) {
+         await addProduct(product);
+      }
+      alert("Successfully seeded " + allStatic.length + " products to Firebase!");
+    } catch (err) {
+      console.error(err);
+      alert("Error seeding database");
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   const handleSave = () => {
     updateLegalPages(pages);
     alert("Legal pages updated successfully!");
@@ -775,6 +907,28 @@ function OffersManager() {
   const resetForm = () => {
     setFormData({ title: "", description: "", image: "", isActive: true });
     setEditingId(null);
+  };
+
+  // Firebase Data Seeding
+  const [isSeeding, setIsSeeding] = useState(false);
+  const handleSeedDatabase = async () => {
+    setIsSeeding(true);
+    try {
+      const { PRODUCTS } = await import("@/data/products");
+      const { ALL_DRESS_PRODUCTS } = await import("@/data/dressProducts");
+      
+      const allStatic = [...PRODUCTS, ...ALL_DRESS_PRODUCTS];
+      
+      for (const product of allStatic) {
+         await addProduct(product);
+      }
+      alert("Successfully seeded " + allStatic.length + " products to Firebase!");
+    } catch (err) {
+      console.error(err);
+      alert("Error seeding database");
+    } finally {
+      setIsSeeding(false);
+    }
   };
 
   const handleSave = () => {
@@ -842,6 +996,28 @@ function SpecialsManager() {
   const resetForm = () => {
     setFormData({ id: "", name: "", subtitle: "", desc: "" });
     setEditingId(null);
+  };
+
+  // Firebase Data Seeding
+  const [isSeeding, setIsSeeding] = useState(false);
+  const handleSeedDatabase = async () => {
+    setIsSeeding(true);
+    try {
+      const { PRODUCTS } = await import("@/data/products");
+      const { ALL_DRESS_PRODUCTS } = await import("@/data/dressProducts");
+      
+      const allStatic = [...PRODUCTS, ...ALL_DRESS_PRODUCTS];
+      
+      for (const product of allStatic) {
+         await addProduct(product);
+      }
+      alert("Successfully seeded " + allStatic.length + " products to Firebase!");
+    } catch (err) {
+      console.error(err);
+      alert("Error seeding database");
+    } finally {
+      setIsSeeding(false);
+    }
   };
 
   const handleSave = () => {
