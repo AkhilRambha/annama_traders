@@ -121,6 +121,8 @@ export function AdminProvider({ children }) {
   const [offers, setOffers] = useState(defaultOffers);
   const [heroStats, setHeroStats] = useState(defaultHeroStats);
   const [specialsCategories, setSpecialsCategories] = useState(defaultSpecialsCategories);
+  const [adminCredentials, setAdminCredentials] = useState({ username: "admin", password: "admin@alankrita" });
+
   
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return sessionStorage.getItem("admin_auth") === "true";
@@ -163,6 +165,15 @@ export function AdminProvider({ children }) {
     });
 
     // Listen to Site Settings (Singleton Document)
+    const unsubSecurity = onSnapshot(doc(db, "settings", "security"), (docSnap) => {
+      if (docSnap.exists()) {
+        setAdminCredentials(docSnap.data());
+      } else {
+        // Seed default credentials if missing
+        setDoc(doc(db, "settings", "security"), { username: "admin", password: "admin@alankrita" });
+      }
+    });
+
     const unsubSettings = onSnapshot(doc(db, "settings", "global"), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -180,6 +191,7 @@ export function AdminProvider({ children }) {
       unsubOffers();
       unsubSpecials();
       unsubSettings();
+      unsubSecurity();
     };
   }, []);
 
@@ -293,12 +305,23 @@ export function AdminProvider({ children }) {
 
   // Auth
   const login = (username, password) => {
-    if (username === "admin" && password === "admin@alankrita") {
+    if (username === adminCredentials.username && password === adminCredentials.password) {
       setIsAuthenticated(true);
       sessionStorage.setItem("admin_auth", "true");
       return true;
     }
     return false;
+  };
+
+  const changePassword = async (newPassword) => {
+    try {
+      await setDoc(doc(db, "settings", "security"), { username: adminCredentials.username, password: newPassword });
+      setAdminCredentials({ ...adminCredentials, password: newPassword });
+      return true;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
   };
 
   const logout = () => {
@@ -317,7 +340,7 @@ export function AdminProvider({ children }) {
       offers, addOffer, updateOffer, deleteOffer,
       heroStats, updateHeroStats,
       specialsCategories, addSpecialCategory, updateSpecialCategory, deleteSpecialCategory,
-      isAuthenticated, login, logout
+      isAuthenticated, login, logout, changePassword, adminCredentials
     }}>
       {children}
     </AdminContext.Provider>

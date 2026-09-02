@@ -562,7 +562,8 @@ function ReviewsManager() {
 }
 
 function SettingsManager() {
-  const { addProduct } = useAdmin();
+  const { addProduct, changePassword, adminCredentials } = useAdmin();
+  const [passData, setPassData] = useState({ current: '', newPass: '', confirm: '' });
   // Firebase Data Seeding
   const [isSeeding, setIsSeeding] = useState(false);
   const handleSeedDatabase = async () => {
@@ -622,6 +623,43 @@ function SettingsManager() {
         </button>
       </div>
       
+      
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mt-12">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Security & Password</h3>
+        <div className="space-y-4 max-w-xl">
+          <div>
+            <label className="block text-xs font-bold text-gray-600 mb-1">Current Password</label>
+            <input type="password" placeholder="Enter current password" className="w-full border p-2 rounded" value={passData.current} onChange={e => setPassData({...passData, current: e.target.value})} />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-600 mb-1">New Password</label>
+            <input type="password" placeholder="Enter new password" className="w-full border p-2 rounded" value={passData.newPass} onChange={e => setPassData({...passData, newPass: e.target.value})} />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-600 mb-1">Confirm New Password</label>
+            <input type="password" placeholder="Confirm new password" className="w-full border p-2 rounded" value={passData.confirm} onChange={e => setPassData({...passData, confirm: e.target.value})} />
+          </div>
+          <button 
+            onClick={async () => {
+              if (passData.current !== adminCredentials.password) return alert("Current password is incorrect");
+              if (passData.newPass !== passData.confirm) return alert("New passwords do not match");
+              if (passData.newPass.length < 6) return alert("Password must be at least 6 characters");
+              
+              const success = await changePassword(passData.newPass);
+              if (success) {
+                alert("Password changed successfully!");
+                setPassData({ current: '', newPass: '', confirm: '' });
+              } else {
+                alert("Failed to change password");
+              }
+            }} 
+            className="mt-2 px-4 py-2 bg-gray-900 text-white rounded font-medium hover:bg-black transition"
+          >
+            Change Password
+          </button>
+        </div>
+      </div>
+
       <div className="bg-gray-100 p-6 rounded-lg shadow-sm border border-gray-200 mt-12">
         <h3 className="text-lg font-bold text-gray-900 mb-4">Database Operations</h3>
         <p className="text-sm text-gray-600 mb-4">Click below to upload all your static default products (Sarees and Dresses) to your new Firebase real-time database. (Note: Only do this once to populate your new database!)</p>
