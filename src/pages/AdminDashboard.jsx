@@ -319,8 +319,8 @@ function ProductsManager() {
               <tr key={p.id} className="hover:bg-gray-50">
                 <td className="p-3"><img src={p.image} className="w-12 h-16 object-cover rounded" alt="" /></td>
                 <td className="p-3 font-medium text-gray-900">{p.name} {p.isNew && <span className="ml-2 text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded">NEW</span>} {p.isFeatured && <span className="ml-2 text-[10px] bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">FEATURED</span>}</td>
-                <td className="p-3 text-gray-600">₹</td>
-                <td className="p-3 text-gray-600">₹</td>
+                <td className="p-3 text-gray-600">₹{p.price}</td>
+                <td className="p-3 text-gray-600">{p.category}</td>
                 <td className="p-3 text-right">
                   <button onClick={() => handleEdit(p)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded mr-2"><Edit2 size={16} /></button>
                   <button onClick={() => deleteProduct(p.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
@@ -423,8 +423,8 @@ function DressesManager() {
               <tr key={p.id} className="hover:bg-gray-50">
                 <td className="p-3"><img src={p.image} className="w-12 h-16 object-cover rounded" alt="" /></td>
                 <td className="p-3 font-medium text-gray-900">{p.name} {p.isNew && <span className="ml-2 text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded">NEW</span>} {p.isFeatured && <span className="ml-2 text-[10px] bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">FEATURED</span>}</td>
-                <td className="p-3 text-gray-600">₹</td>
-                <td className="p-3 text-gray-600">₹</td>
+                <td className="p-3 text-gray-600">₹{p.price}</td>
+                <td className="p-3 text-gray-600">{p.category}</td>
                 <td className="p-3 text-right">
                   <button onClick={() => handleEdit(p)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded mr-2"><Edit2 size={16} /></button>
                   <button onClick={() => deleteProduct(p.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
@@ -547,7 +547,7 @@ function ReviewsManager() {
           <div key={r.id} className="p-4 border rounded-md flex justify-between items-start hover:bg-gray-50">
             <div>
               <div className="font-bold text-gray-900">{r.name} <span className="text-sm font-normal text-gray-500 ml-2">{r.location}</span></div>
-              <div className="text-yellow-500 text-sm my-1">{"?".repeat(r.rating)}{"?".repeat(5-r.rating)}</div>
+              <div className="text-yellow-500 text-sm my-1">{"â˜…".repeat(r.rating)}{"â˜†".repeat(5-r.rating)}</div>
               <p className="text-gray-600 text-sm mt-2 italic">"{r.content}"</p>
             </div>
             <div className="flex gap-2 shrink-0">
