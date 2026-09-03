@@ -310,7 +310,25 @@ function ProductsManager() {
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Name</label><input type="text" className="w-full border p-2 rounded" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Price (₹)</label><input type="number" className="w-full border p-2 rounded" value={formData.price} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} /></div>
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Category</label><select className="w-full border p-2 rounded" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>{categories.map((c, i) => { const cName = typeof c === 'string' ? c : (c.name || c.id || `cat-${i}`); return <option key={cName} value={cName}>{cName}</option> })}</select></div>
-            <div><label className="block text-xs font-bold text-gray-600 mb-1">Image URL</label><input type="text" className="w-full border p-2 rounded" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} placeholder="https://..." /></div>
+            <div>
+  <label className="block text-xs font-bold text-gray-600 mb-1">Image URL or Upload File</label>
+  <div className="flex gap-2">
+    <input type="text" className="flex-1 border p-2 rounded min-w-0" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} placeholder="https://..." />
+    <label className="bg-primary text-white cursor-pointer rounded px-4 py-2 flex items-center justify-center relative hover:bg-primary/90 transition flex-shrink-0 text-sm font-medium">
+       Upload
+       <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+          if (e.target.files[0]) {
+             e.target.parentNode.innerHTML = 'Uploading...';
+             const url = await uploadImage(e.target.files[0]);
+             if (url) {
+                setFormData({ ...formData, image: url });
+                alert('Upload successful!');
+             }
+          }
+       }} />
+    </label>
+  </div>
+</div>
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Stock Quantity</label><input type="number" className="w-full border p-2 rounded" value={formData.stock || 0} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} /></div>
             <div className="flex items-center gap-4 mt-6">
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={formData.isNew} onChange={e => setFormData({ ...formData, isNew: e.target.checked })} /> New Arrival</label>
@@ -436,7 +454,25 @@ function DressesManager() {
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Name</label><input type="text" className="w-full border p-2 rounded" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Price (₹)</label><input type="number" className="w-full border p-2 rounded" value={formData.price} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} /></div>
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Category</label><select className="w-full border p-2 rounded" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>{dressCategoryNames.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-            <div><label className="block text-xs font-bold text-gray-600 mb-1">Image URL</label><input type="text" className="w-full border p-2 rounded" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} placeholder="https://..." /></div>
+            <div>
+  <label className="block text-xs font-bold text-gray-600 mb-1">Image URL or Upload File</label>
+  <div className="flex gap-2">
+    <input type="text" className="flex-1 border p-2 rounded min-w-0" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} placeholder="https://..." />
+    <label className="bg-primary text-white cursor-pointer rounded px-4 py-2 flex items-center justify-center relative hover:bg-primary/90 transition flex-shrink-0 text-sm font-medium">
+       Upload
+       <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+          if (e.target.files[0]) {
+             e.target.parentNode.innerHTML = 'Uploading...';
+             const url = await uploadImage(e.target.files[0]);
+             if (url) {
+                setFormData({ ...formData, image: url });
+                alert('Upload successful!');
+             }
+          }
+       }} />
+    </label>
+  </div>
+</div>
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Stock Quantity</label><input type="number" className="w-full border p-2 rounded" value={formData.stock || 0} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} /></div>
             <div className="flex items-center gap-4 mt-6">
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={formData.isNew} onChange={e => setFormData({ ...formData, isNew: e.target.checked })} /> New Arrival</label>
@@ -620,7 +656,25 @@ function ReviewsManager() {
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Location</label><input type="text" className="w-full border p-2 rounded" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} /></div>
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Rating (1-5)</label><input type="number" min="1" max="5" className="w-full border p-2 rounded" value={formData.rating} onChange={e => setFormData({ ...formData, rating: Number(e.target.value) })} /></div>
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Type (text/photo/video)</label><select className="w-full border p-2 rounded" value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value })}><option value="text">Text</option><option value="photo">Photo</option><option value="video">Video</option></select></div>
-            {formData.type !== "text" && <div className="col-span-2"><label className="block text-xs font-bold text-gray-600 mb-1">Image/Video Thumbnail URL</label><input type="text" className="w-full border p-2 rounded" value={formData.thumbnail} onChange={e => setFormData({ ...formData, thumbnail: e.target.value })} placeholder="https://..." /></div>}
+            {formData.type !== "text" && <div className="col-span-2">
+  <label className="block text-xs font-bold text-gray-600 mb-1">Image/Video Thumbnail URL or Upload</label>
+  <div className="flex gap-2">
+    <input type="text" className="flex-1 border p-2 rounded min-w-0" value={formData.thumbnail} onChange={e => setFormData({ ...formData, thumbnail: e.target.value })} placeholder="https://..." />
+    <label className="bg-primary text-white cursor-pointer rounded px-4 py-2 flex items-center justify-center relative hover:bg-primary/90 transition flex-shrink-0 text-sm font-medium">
+       Upload
+       <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+          if (e.target.files[0]) {
+             e.target.parentNode.innerHTML = 'Uploading...';
+             const url = await uploadImage(e.target.files[0]);
+             if (url) {
+                setFormData({ ...formData, thumbnail: url });
+                alert('Upload successful!');
+             }
+          }
+       }} />
+    </label>
+  </div>
+</div>}
             <div className="col-span-2"><label className="block text-xs font-bold text-gray-600 mb-1">Review Content</label><textarea rows={3} className="w-full border p-2 rounded" value={formData.content} onChange={e => setFormData({ ...formData, content: e.target.value })} /></div>
           </div>
           <div className="mt-4 flex justify-end gap-3">
@@ -650,7 +704,7 @@ function ReviewsManager() {
 }
 
 function SettingsManager() {
-  const { addProduct, changePassword, adminCredentials, generateOtp, verifyOtp, updateContactInfo, contactInfo } = useAdmin();
+  const { addProduct, changePassword, adminCredentials, generateOtp, verifyOtp, updateContactInfo, contactInfo, uploadImage } = useAdmin();
 
   const [info, setInfo] = useState(contactInfo || { phone: "", email: "", address: "", hours: "" });
   const [passData, setPassData] = useState({ current: '', newPass: '', confirm: '' });
@@ -957,7 +1011,22 @@ function OffersManager() {
         <h3 className="font-bold mb-4">{editingId ? "Edit Offer" : "Add New Offer"}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input type="text" placeholder="Offer Title" className="border p-2 rounded" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
-          <input type="text" placeholder="Image URL (e.g. https://images.unsplash.com/...)" className="border p-2 rounded" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} />
+          <div className="flex gap-2">
+  <input type="text" placeholder="Image URL (e.g. https://...)" className="flex-1 border p-2 rounded min-w-0" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} />
+  <label className="bg-primary text-white cursor-pointer rounded px-4 py-2 flex items-center justify-center relative hover:bg-primary/90 transition flex-shrink-0 text-sm font-medium">
+     Upload
+     <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+        if (e.target.files[0]) {
+           e.target.parentNode.innerHTML = 'Uploading...';
+           const url = await uploadImage(e.target.files[0]);
+           if (url) {
+              setFormData({ ...formData, image: url });
+              alert('Upload successful!');
+           }
+        }
+     }} />
+  </label>
+</div>
           <textarea placeholder="Offer Description" className="border p-2 rounded md:col-span-2" rows={3} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
           <div className="flex items-center gap-2">
             <input type="checkbox" id="isActive" checked={formData.isActive} onChange={e => setFormData({ ...formData, isActive: e.target.checked })} />

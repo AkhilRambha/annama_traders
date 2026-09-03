@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { PRODUCTS, CATEGORIES } from "@/data/products";
 import { ALL_DRESS_PRODUCTS } from "@/data/dressProducts";
@@ -311,6 +312,23 @@ export function AdminProvider({ children }) {
       return true;
     }
     return false;
+  };
+
+
+  // Image Upload Logic
+  const uploadImage = async (file, folder = "uploads") => {
+    if (!file) return null;
+    try {
+      const filename = `${Date.now()}_${file.name}`;
+      const storageRef = ref(storage, `${folder}/${filename}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      return downloadURL;
+    } catch (error) {
+      console.error("Error uploading image: ", error);
+      alert("Failed to upload image. Check console for details.");
+      return null;
+    }
   };
 
   const generateOtp = async () => {
