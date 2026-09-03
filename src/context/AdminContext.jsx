@@ -2,8 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { db, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
-import { PRODUCTS, CATEGORIES } from "@/data/products";
-import { ALL_DRESS_PRODUCTS } from "@/data/dressProducts";
+import { CATEGORIES } from "@/data/products";
 
 // Default Hero Images (using imported static assets temporarily)
 import bridal from "@/assets/sarees/pt5.jfif";
@@ -113,7 +112,7 @@ const AdminContext = createContext();
 
 export function AdminProvider({ children }) {
   // --- STATE INITIALIZATION (Defaults while loading) ---
-  const [products, setProducts] = useState([...PRODUCTS, ...ALL_DRESS_PRODUCTS]);
+  const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([...new Set(CATEGORIES)]);
   const [heroImages, setHeroImages] = useState(defaultHeroImages);
   const [reviews, setReviews] = useState(defaultReviews);
