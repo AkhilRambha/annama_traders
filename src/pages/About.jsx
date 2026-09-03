@@ -28,7 +28,7 @@ function AboutPage() {
           className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-primary/80 mix-blend-multiply" />
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/90 via-transparent to-background" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/90 to-primary/20" />
 
         <div className="relative z-10 px-6 mt-20 max-w-5xl mx-auto flex flex-col items-center md:items-start justify-center w-full">
           <motion.div

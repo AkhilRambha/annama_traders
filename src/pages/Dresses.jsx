@@ -15,7 +15,7 @@ const Dresses = () => {
             alt="Dresses Collection Hero"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#72242C]/80 via-[#72242C]/50 to-background" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#72242C]/80 to-[#72242C]/50" />
         </div>
 
         <div className="relative z-10 text-center px-6 pt-16">
