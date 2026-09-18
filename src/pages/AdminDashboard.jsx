@@ -145,7 +145,7 @@ function AdminLogin() {
 }
 
 function CategoriesManager() {
-  const { categories, addCategory, updateCategory, deleteCategory } = useAdmin();
+  const { categories, addCategory, updateCategory, deleteCategory, uploadImage } = useAdmin();
   const [newCategory, setNewCategory] = useState("");
   const [editingCat, setEditingCat] = useState(null);
   const [editValue, setEditValue] = useState("");
@@ -231,7 +231,7 @@ function CategoriesManager() {
 }
 
 function ProductsManager() {
-  const { products, addProduct, updateProduct, deleteProduct, categories } = useAdmin();
+  const { products, addProduct, updateProduct, deleteProduct, categories, uploadImage } = useAdmin();
   const filteredProducts = products.filter(p => !dressCategoryNames.includes(p.category));
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({});
@@ -290,24 +290,24 @@ function ProductsManager() {
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Price (₹)</label><input type="number" className="w-full border p-2 rounded" value={formData.price} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} /></div>
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Category</label><select className="w-full border p-2 rounded" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>{categories.map((c, i) => { const cName = typeof c === 'string' ? c : (c.name || c.id || `cat-${i}`); return <option key={cName} value={cName}>{cName}</option> })}</select></div>
             <div>
-  <label className="block text-xs font-bold text-gray-600 mb-1">Image URL or Upload File</label>
-  <div className="flex gap-2">
-    <input type="text" className="flex-1 border p-2 rounded min-w-0" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} placeholder="https://..." />
-    <label className="bg-primary text-white cursor-pointer rounded px-4 py-2 flex items-center justify-center relative hover:bg-primary/90 transition flex-shrink-0 text-sm font-medium">
-       Upload
-       <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-          if (e.target.files[0]) {
-             e.target.parentNode.innerHTML = 'Uploading...';
-             const url = await uploadImage(e.target.files[0]);
-             if (url) {
-                setFormData({ ...formData, image: url });
-                alert('Upload successful!');
-             }
-          }
-       }} />
-    </label>
-  </div>
-</div>
+              <label className="block text-xs font-bold text-gray-600 mb-1">Image URL or Upload File</label>
+              <div className="flex gap-2">
+                <input type="text" className="flex-1 border p-2 rounded min-w-0" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} placeholder="https://..." />
+                <label className="bg-primary text-white cursor-pointer rounded px-4 py-2 flex items-center justify-center relative hover:bg-primary/90 transition flex-shrink-0 text-sm font-medium">
+                  Upload
+                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                    if (e.target.files[0]) {
+
+                      const url = await uploadImage(e.target.files[0]);
+                      if (url) {
+                        setFormData({ ...formData, image: url });
+                        alert('Upload successful');
+                      }
+                    }
+                  }} />
+                </label>
+              </div>
+            </div>
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Stock Quantity</label><input type="number" className="w-full border p-2 rounded" value={formData.stock || 0} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} /></div>
             <div className="flex items-center gap-4 mt-6">
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={formData.isNew} onChange={e => setFormData({ ...formData, isNew: e.target.checked })} /> New Arrival</label>
@@ -354,7 +354,7 @@ function ProductsManager() {
 }
 
 function DressesManager() {
-  const { products, addProduct, updateProduct, deleteProduct, categories } = useAdmin();
+  const { products, addProduct, updateProduct, deleteProduct, categories, uploadImage } = useAdmin();
   const filteredProducts = products.filter(p => dressCategoryNames.includes(p.category));
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({});
@@ -413,24 +413,24 @@ function DressesManager() {
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Price (₹)</label><input type="number" className="w-full border p-2 rounded" value={formData.price} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} /></div>
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Category</label><select className="w-full border p-2 rounded" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>{dressCategoryNames.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
             <div>
-  <label className="block text-xs font-bold text-gray-600 mb-1">Image URL or Upload File</label>
-  <div className="flex gap-2">
-    <input type="text" className="flex-1 border p-2 rounded min-w-0" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} placeholder="https://..." />
-    <label className="bg-primary text-white cursor-pointer rounded px-4 py-2 flex items-center justify-center relative hover:bg-primary/90 transition flex-shrink-0 text-sm font-medium">
-       Upload
-       <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-          if (e.target.files[0]) {
-             e.target.parentNode.innerHTML = 'Uploading...';
-             const url = await uploadImage(e.target.files[0]);
-             if (url) {
-                setFormData({ ...formData, image: url });
-                alert('Upload successful!');
-             }
-          }
-       }} />
-    </label>
-  </div>
-</div>
+              <label className="block text-xs font-bold text-gray-600 mb-1">Image URL or Upload File</label>
+              <div className="flex gap-2">
+                <input type="text" className="flex-1 border p-2 rounded min-w-0" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} placeholder="https://..." />
+                <label className="bg-primary text-white cursor-pointer rounded px-4 py-2 flex items-center justify-center relative hover:bg-primary/90 transition flex-shrink-0 text-sm font-medium">
+                  Upload
+                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                    if (e.target.files[0]) {
+                      e.target.parentNode.innerHTML = 'Uploading...';
+                      const url = await uploadImage(e.target.files[0]);
+                      if (url) {
+                        setFormData({ ...formData, image: url });
+                        alert('Upload successful!');
+                      }
+                    }
+                  }} />
+                </label>
+              </div>
+            </div>
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Stock Quantity</label><input type="number" className="w-full border p-2 rounded" value={formData.stock || 0} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} /></div>
             <div className="flex items-center gap-4 mt-6">
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={formData.isNew} onChange={e => setFormData({ ...formData, isNew: e.target.checked })} /> New Arrival</label>
@@ -478,7 +478,7 @@ function DressesManager() {
 
 
 function HeroManager() {
-  const { heroImages, updateHeroImages, heroStats, updateHeroStats } = useAdmin();
+  const { heroImages, updateHeroImages, heroStats, updateHeroStats, uploadImage } = useAdmin();
   const [images, setImages] = useState(heroImages);
   const [stats, setStats] = useState(heroStats || { sareesCurated: "500+", avgExperience: "5", showroomTrips: "0" });
 
@@ -545,7 +545,7 @@ function HeroManager() {
 }
 
 function ReviewsManager() {
-  const { reviews, addReview, updateReview, deleteReview } = useAdmin();
+  const { reviews, addReview, updateReview, deleteReview, uploadImage } = useAdmin();
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({});
   const [isAdding, setIsAdding] = useState(false);
@@ -573,24 +573,24 @@ function ReviewsManager() {
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Rating (1-5)</label><input type="number" min="1" max="5" className="w-full border p-2 rounded" value={formData.rating} onChange={e => setFormData({ ...formData, rating: Number(e.target.value) })} /></div>
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Type (text/photo/video)</label><select className="w-full border p-2 rounded" value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value })}><option value="text">Text</option><option value="photo">Photo</option><option value="video">Video</option></select></div>
             {formData.type !== "text" && <div className="col-span-2">
-  <label className="block text-xs font-bold text-gray-600 mb-1">Image/Video Thumbnail URL or Upload</label>
-  <div className="flex gap-2">
-    <input type="text" className="flex-1 border p-2 rounded min-w-0" value={formData.thumbnail} onChange={e => setFormData({ ...formData, thumbnail: e.target.value })} placeholder="https://..." />
-    <label className="bg-primary text-white cursor-pointer rounded px-4 py-2 flex items-center justify-center relative hover:bg-primary/90 transition flex-shrink-0 text-sm font-medium">
-       Upload
-       <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-          if (e.target.files[0]) {
-             e.target.parentNode.innerHTML = 'Uploading...';
-             const url = await uploadImage(e.target.files[0]);
-             if (url) {
-                setFormData({ ...formData, thumbnail: url });
-                alert('Upload successful!');
-             }
-          }
-       }} />
-    </label>
-  </div>
-</div>}
+              <label className="block text-xs font-bold text-gray-600 mb-1">Image/Video Thumbnail URL or Upload</label>
+              <div className="flex gap-2">
+                <input type="text" className="flex-1 border p-2 rounded min-w-0" value={formData.thumbnail} onChange={e => setFormData({ ...formData, thumbnail: e.target.value })} placeholder="https://..." />
+                <label className="bg-primary text-white cursor-pointer rounded px-4 py-2 flex items-center justify-center relative hover:bg-primary/90 transition flex-shrink-0 text-sm font-medium">
+                  Upload
+                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                    if (e.target.files[0]) {
+                      e.target.parentNode.innerHTML = 'Uploading...';
+                      const url = await uploadImage(e.target.files[0]);
+                      if (url) {
+                        setFormData({ ...formData, thumbnail: url });
+                        alert('Upload successful!');
+                      }
+                    }
+                  }} />
+                </label>
+              </div>
+            </div>}
             <div className="col-span-2"><label className="block text-xs font-bold text-gray-600 mb-1">Review Content</label><textarea rows={3} className="w-full border p-2 rounded" value={formData.content} onChange={e => setFormData({ ...formData, content: e.target.value })} /></div>
           </div>
           <div className="mt-4 flex justify-end gap-3">
@@ -829,7 +829,7 @@ function LegalManager() {
 }
 
 function OffersManager() {
-  const { offers, addOffer, updateOffer, deleteOffer } = useAdmin();
+  const { offers, addOffer, updateOffer, deleteOffer, uploadImage } = useAdmin();
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ title: "", description: "", image: "", isActive: true });
 
@@ -865,21 +865,21 @@ function OffersManager() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input type="text" placeholder="Offer Title" className="border p-2 rounded" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
           <div className="flex gap-2">
-  <input type="text" placeholder="Image URL (e.g. https://...)" className="flex-1 border p-2 rounded min-w-0" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} />
-  <label className="bg-primary text-white cursor-pointer rounded px-4 py-2 flex items-center justify-center relative hover:bg-primary/90 transition flex-shrink-0 text-sm font-medium">
-     Upload
-     <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-        if (e.target.files[0]) {
-           e.target.parentNode.innerHTML = 'Uploading...';
-           const url = await uploadImage(e.target.files[0]);
-           if (url) {
-              setFormData({ ...formData, image: url });
-              alert('Upload successful!');
-           }
-        }
-     }} />
-  </label>
-</div>
+            <input type="text" placeholder="Image URL (e.g. https://...)" className="flex-1 border p-2 rounded min-w-0" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} />
+            <label className="bg-primary text-white cursor-pointer rounded px-4 py-2 flex items-center justify-center relative hover:bg-primary/90 transition flex-shrink-0 text-sm font-medium">
+              Upload
+              <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                if (e.target.files[0]) {
+                  e.target.parentNode.innerHTML = 'Uploading...';
+                  const url = await uploadImage(e.target.files[0]);
+                  if (url) {
+                    setFormData({ ...formData, image: url });
+                    alert('Upload successful!');
+                  }
+                }
+              }} />
+            </label>
+          </div>
           <textarea placeholder="Offer Description" className="border p-2 rounded md:col-span-2" rows={3} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
           <div className="flex items-center gap-2">
             <input type="checkbox" id="isActive" checked={formData.isActive} onChange={e => setFormData({ ...formData, isActive: e.target.checked })} />
@@ -912,7 +912,7 @@ function OffersManager() {
 }
 
 function SpecialsManager() {
-  const { specialsCategories, addSpecialCategory, updateSpecialCategory, deleteSpecialCategory } = useAdmin();
+  const { specialsCategories, addSpecialCategory, updateSpecialCategory, deleteSpecialCategory, uploadImage } = useAdmin();
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ id: "", name: "", subtitle: "", desc: "" });
 
@@ -996,5 +996,6 @@ function SpecialsManager() {
     </div>
   );
 }
+
 
 

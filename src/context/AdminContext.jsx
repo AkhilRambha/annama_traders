@@ -123,7 +123,7 @@ export function AdminProvider({ children }) {
   const [specialsCategories, setSpecialsCategories] = useState(defaultSpecialsCategories);
   const [adminCredentials, setAdminCredentials] = useState({ username: "admin", password: "admin@alankrita" });
 
-  
+
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return sessionStorage.getItem("admin_auth") === "true";
   });
@@ -155,7 +155,7 @@ export function AdminProvider({ children }) {
         setOffers(fbOffers);
       }
     });
-    
+
     // Listen to Specials
     const unsubSpecials = onSnapshot(collection(db, "specials"), (snap) => {
       if (!snap.empty) {
@@ -196,25 +196,25 @@ export function AdminProvider({ children }) {
   }, []);
 
   // --- FIREBASE ACTIONS ---
-  
+
   // Products
   const addProduct = async (product) => {
     // Optimistic update
     setProducts([product, ...products]);
-    try { await setDoc(doc(db, "products", product.id), product); } catch(e) { console.error(e); }
+    try { await setDoc(doc(db, "products", product.id), product); } catch (e) { console.error(e); }
   };
   const updateProduct = async (id, updatedProduct) => {
     setProducts(products.map(p => p.id === id ? updatedProduct : p));
-    try { await updateDoc(doc(db, "products", id), updatedProduct); } catch(e) { console.error(e); }
+    try { await updateDoc(doc(db, "products", id), updatedProduct); } catch (e) { console.error(e); }
   };
   const deleteProduct = async (id) => {
     setProducts(products.filter(p => p.id !== id));
-    try { await deleteDoc(doc(db, "products", id)); } catch(e) { console.error(e); }
+    try { await deleteDoc(doc(db, "products", id)); } catch (e) { console.error(e); }
   };
 
   // Settings sync helper
   const updateSettings = async (key, value) => {
-    try { await setDoc(doc(db, "settings", "global"), { [key]: value }, { merge: true }); } catch(e) { console.error(e); }
+    try { await setDoc(doc(db, "settings", "global"), { [key]: value }, { merge: true }); } catch (e) { console.error(e); }
   };
 
   // Categories
@@ -243,18 +243,18 @@ export function AdminProvider({ children }) {
   // Reviews
   const addReview = async (review) => {
     setReviews([review, ...reviews]);
-    try { 
+    try {
       const reviewId = review.id ? String(review.id) : String(Date.now());
-      await setDoc(doc(db, "reviews", reviewId), { ...review, id: reviewId }); 
-    } catch(e) {}
+      await setDoc(doc(db, "reviews", reviewId), { ...review, id: reviewId });
+    } catch (e) { }
   };
   const updateReview = async (id, updatedReview) => {
     setReviews(reviews.map(r => String(r.id) === String(id) ? updatedReview : r));
-    try { await updateDoc(doc(db, "reviews", String(id)), updatedReview); } catch(e) {}
+    try { await updateDoc(doc(db, "reviews", String(id)), updatedReview); } catch (e) { }
   };
   const deleteReview = async (id) => {
     setReviews(reviews.filter(r => String(r.id) !== String(id)));
-    try { await deleteDoc(doc(db, "reviews", String(id))); } catch(e) {}
+    try { await deleteDoc(doc(db, "reviews", String(id))); } catch (e) { }
   };
 
   // Contact Info
@@ -272,15 +272,15 @@ export function AdminProvider({ children }) {
   // Offers
   const addOffer = async (offer) => {
     setOffers([offer, ...offers]);
-    try { await setDoc(doc(db, "offers", offer.id), offer); } catch(e) {}
+    try { await setDoc(doc(db, "offers", offer.id), offer); } catch (e) { }
   };
   const updateOffer = async (id, updatedOffer) => {
     setOffers(offers.map(o => o.id === id ? updatedOffer : o));
-    try { await updateDoc(doc(db, "offers", id), updatedOffer); } catch(e) {}
+    try { await updateDoc(doc(db, "offers", id), updatedOffer); } catch (e) { }
   };
   const deleteOffer = async (id) => {
     setOffers(offers.filter(o => o.id !== id));
-    try { await deleteDoc(doc(db, "offers", id)); } catch(e) {}
+    try { await deleteDoc(doc(db, "offers", id)); } catch (e) { }
   };
 
   // Hero Stats
@@ -292,15 +292,15 @@ export function AdminProvider({ children }) {
   // Specials Categories
   const addSpecialCategory = async (category) => {
     setSpecialsCategories([...specialsCategories, category]);
-    try { await setDoc(doc(db, "specials", category.id), category); } catch(e) {}
+    try { await setDoc(doc(db, "specials", category.id), category); } catch (e) { }
   };
   const updateSpecialCategory = async (id, updated) => {
     setSpecialsCategories(specialsCategories.map(c => c.id === id ? updated : c));
-    try { await updateDoc(doc(db, "specials", id), updated); } catch(e) {}
+    try { await updateDoc(doc(db, "specials", id), updated); } catch (e) { }
   };
   const deleteSpecialCategory = async (id) => {
     setSpecialsCategories(specialsCategories.filter(c => c.id !== id));
-    try { await deleteDoc(doc(db, "specials", id)); } catch(e) {}
+    try { await deleteDoc(doc(db, "specials", id)); } catch (e) { }
   };
 
   // Auth
@@ -314,18 +314,27 @@ export function AdminProvider({ children }) {
   };
 
 
-  // Image Upload Logic
-  const uploadImage = async (file, folder = "uploads") => {
+  // Cloudinary Image Upload Logic
+  const uploadImage = async (file) => {
     if (!file) return null;
     try {
-      const filename = `${Date.now()}_${file.name}`;
-      const storageRef = ref(storage, `${folder}/${filename}`);
-      const snapshot = await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-      return downloadURL;
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', 'sherize_preset');
+
+      const res = await fetch('https://api.cloudinary.com/v1_1/yjhf6lsp/auto/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.secure_url) {
+        return data.secure_url;
+      } else {
+        throw new Error(data.error?.message || 'Upload failed');
+      }
     } catch (error) {
-      console.error("Error uploading image: ", error);
-      alert("Failed to upload image. Check console for details.");
+      console.error('Error uploading image to Cloudinary:', error);
+      alert('Failed to upload image. Check console for details.');
       return null;
     }
   };
@@ -373,7 +382,7 @@ export function AdminProvider({ children }) {
       offers, addOffer, updateOffer, deleteOffer,
       heroStats, updateHeroStats,
       specialsCategories, addSpecialCategory, updateSpecialCategory, deleteSpecialCategory,
-      isAuthenticated, login, logout, changePassword, adminCredentials, generateOtp, verifyOtp
+      isAuthenticated, login, logout, changePassword, adminCredentials, generateOtp, verifyOtp, uploadImage
     }}>
       {children}
     </AdminContext.Provider>
@@ -381,3 +390,5 @@ export function AdminProvider({ children }) {
 }
 
 export const useAdmin = () => useContext(AdminContext);
+
+
