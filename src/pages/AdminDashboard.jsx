@@ -45,7 +45,7 @@ function useImageUpload(uploadImage, setFormData, field) {
 }
 
 export default function AdminDashboard() {
-  const { isAuthenticated, login, logout } = useAdmin();
+  const { isAuthenticated, isAuthReady, login, logout } = useAdmin();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("products");
 
@@ -60,6 +60,15 @@ export default function AdminDashboard() {
     { id: "legal", name: "Legal Pages", icon: FileText },
     { id: "settings", name: "Site Settings", icon: Settings },
   ];
+
+  if (!isAuthReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-600">
+        <LoaderCircle size={20} className="animate-spin mr-2" />
+        Checking admin session...
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <AdminLogin />;

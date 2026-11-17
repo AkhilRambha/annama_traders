@@ -129,13 +129,15 @@ export function AdminProvider({ children }) {
   const [heroStats, setHeroStats] = useState(defaultHeroStats);
   const [specialsCategories, setSpecialsCategories] = useState(defaultSpecialsCategories);
 
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [adminEmail, setAdminEmail] = useState("");
+  const [firebaseUser, setFirebaseUser] = useState(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const isAuthenticated = Boolean(firebaseUser);
+  const adminEmail = firebaseUser?.email || "";
 
   useEffect(() => {
     return onAuthStateChanged(auth, user => {
-      setIsAuthenticated(Boolean(user));
-      setAdminEmail(user?.email || "");
+      setFirebaseUser(user);
+      setIsAuthReady(true);
     });
   }, []);
 
@@ -172,7 +174,16 @@ export function AdminProvider({ children }) {
       }
     }, error => console.error("Failed to load specials from Firestore:", error));
 
-    const unsubSettings = onSnapshot(doc(db, "settings", "global"), (docSnap) => {
+    return () => {
+      unsubProducts();
+      unsubReviews();
+      unsubOffers();
+      unsubSpecials();
+    };
+  }, []);
+
+  useEffect(() => {
+    return onSnapshot(doc(db, "settings", "global"), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         if (data.categories) setCategories(data.categories);
@@ -181,15 +192,9 @@ export function AdminProvider({ children }) {
         if (data.legalPages) setLegalPages(data.legalPages);
         if (data.heroStats) setHeroStats(data.heroStats);
       }
-    }, error => console.error("Failed to load site settings from Firestore:", error));
-
-    return () => {
-      unsubProducts();
-      unsubReviews();
-      unsubOffers();
-      unsubSpecials();
-      unsubSettings();
-    };
+    }, error => {
+      console.error("Failed to read public Firestore document settings/global. Check that the published rules allow read access to this document:", error);
+    });
   }, []);
 
   // --- FIREBASE ACTIONS ---
@@ -348,7 +353,7 @@ export function AdminProvider({ children }) {
       offers, addOffer, updateOffer, deleteOffer,
       heroStats,
       specialsCategories, addSpecialCategory, updateSpecialCategory, deleteSpecialCategory,
-      isAuthenticated, adminEmail, login, logout, changePassword, uploadImage
+      isAuthenticated, isAuthReady, adminEmail, login, logout, changePassword, uploadImage
     }}>
       {children}
     </AdminContext.Provider>
