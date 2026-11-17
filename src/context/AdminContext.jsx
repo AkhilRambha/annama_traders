@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { db, storage } from "@/lib/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { auth, db } from "@/lib/firebase";
+import {
+  EmailAuthProvider,
+  onAuthStateChanged,
+  reauthenticateWithCredential,
+  signInWithEmailAndPassword,
+  signOut,
+  updatePassword
+} from "firebase/auth";
 import { collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { CATEGORIES } from "@/data/products";
 
@@ -121,23 +128,24 @@ export function AdminProvider({ children }) {
   const [offers, setOffers] = useState(defaultOffers);
   const [heroStats, setHeroStats] = useState(defaultHeroStats);
   const [specialsCategories, setSpecialsCategories] = useState(defaultSpecialsCategories);
-  const [adminCredentials, setAdminCredentials] = useState({ username: "admin", password: "admin@alankrita" });
 
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [adminEmail, setAdminEmail] = useState("");
 
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return sessionStorage.getItem("admin_auth") === "true";
-  });
+  useEffect(() => {
+    return onAuthStateChanged(auth, user => {
+      setIsAuthenticated(Boolean(user));
+      setAdminEmail(user?.email || "");
+    });
+  }, []);
 
   // --- FIREBASE SYNC (REAL-TIME LISTENER) ---
   useEffect(() => {
     // Listen to Products
     const unsubProducts = onSnapshot(collection(db, "products"), (snap) => {
-      if (!snap.empty) {
-        const fbProducts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setProducts(fbProducts);
-      }
+      setProducts(snap.docs.map(productDoc => ({ id: productDoc.id, ...productDoc.data() })));
     }, (error) => {
-      console.log("Firebase not configured yet or empty. Using default products.", error);
+      console.error("Failed to load products from Firestore:", error);
     });
 
     // Listen to Reviews
@@ -146,7 +154,7 @@ export function AdminProvider({ children }) {
         const fbReviews = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setReviews(fbReviews);
       }
-    });
+    }, error => console.error("Failed to load reviews from Firestore:", error));
 
     // Listen to Offers
     const unsubOffers = onSnapshot(collection(db, "offers"), (snap) => {
@@ -154,7 +162,7 @@ export function AdminProvider({ children }) {
         const fbOffers = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setOffers(fbOffers);
       }
-    });
+    }, error => console.error("Failed to load offers from Firestore:", error));
 
     // Listen to Specials
     const unsubSpecials = onSnapshot(collection(db, "specials"), (snap) => {
@@ -162,17 +170,7 @@ export function AdminProvider({ children }) {
         const fbSpecials = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setSpecialsCategories(fbSpecials);
       }
-    });
-
-    // Listen to Site Settings (Singleton Document)
-    const unsubSecurity = onSnapshot(doc(db, "settings", "security"), (docSnap) => {
-      if (docSnap.exists()) {
-        setAdminCredentials(docSnap.data());
-      } else {
-        // Seed default credentials if missing
-        setDoc(doc(db, "settings", "security"), { username: "admin", password: "admin@alankrita" });
-      }
-    });
+    }, error => console.error("Failed to load specials from Firestore:", error));
 
     const unsubSettings = onSnapshot(doc(db, "settings", "global"), (docSnap) => {
       if (docSnap.exists()) {
@@ -183,7 +181,7 @@ export function AdminProvider({ children }) {
         if (data.legalPages) setLegalPages(data.legalPages);
         if (data.heroStats) setHeroStats(data.heroStats);
       }
-    });
+    }, error => console.error("Failed to load site settings from Firestore:", error));
 
     return () => {
       unsubProducts();
@@ -191,7 +189,6 @@ export function AdminProvider({ children }) {
       unsubOffers();
       unsubSpecials();
       unsubSettings();
-      unsubSecurity();
     };
   }, []);
 
@@ -199,190 +196,159 @@ export function AdminProvider({ children }) {
 
   // Products
   const addProduct = async (product) => {
-    // Optimistic update
-    setProducts([product, ...products]);
-    try { await setDoc(doc(db, "products", product.id), product); } catch (e) { console.error(e); }
+    await setDoc(doc(db, "products", product.id), product);
+    setProducts(currentProducts => [
+      product,
+      ...currentProducts.filter(currentProduct => currentProduct.id !== product.id)
+    ]);
   };
   const updateProduct = async (id, updatedProduct) => {
-    setProducts(products.map(p => p.id === id ? updatedProduct : p));
-    try { await updateDoc(doc(db, "products", id), updatedProduct); } catch (e) { console.error(e); }
+    await updateDoc(doc(db, "products", id), updatedProduct);
+    setProducts(currentProducts => currentProducts.map(product => product.id === id ? updatedProduct : product));
   };
   const deleteProduct = async (id) => {
-    setProducts(products.filter(p => p.id !== id));
-    try { await deleteDoc(doc(db, "products", id)); } catch (e) { console.error(e); }
+    await deleteDoc(doc(db, "products", id));
+    setProducts(currentProducts => currentProducts.filter(product => product.id !== id));
   };
 
   // Settings sync helper
   const updateSettings = async (key, value) => {
-    try { await setDoc(doc(db, "settings", "global"), { [key]: value }, { merge: true }); } catch (e) { console.error(e); }
+    await setDoc(doc(db, "settings", "global"), { [key]: value }, { merge: true });
   };
 
   // Categories
-  const addCategory = (category) => {
+  const addCategory = async (category) => {
     const newCat = [...categories, category];
+    await updateSettings("categories", newCat);
     setCategories(newCat);
-    updateSettings("categories", newCat);
   };
-  const updateCategory = (oldCategory, newCategory) => {
+  const updateCategory = async (oldCategory, newCategory) => {
     const newCat = categories.map(c => c === oldCategory ? newCategory : c);
+    await updateSettings("categories", newCat);
     setCategories(newCat);
-    updateSettings("categories", newCat);
   };
-  const deleteCategory = (category) => {
+  const deleteCategory = async (category) => {
     const newCat = categories.filter(c => c !== category);
+    await updateSettings("categories", newCat);
     setCategories(newCat);
-    updateSettings("categories", newCat);
   };
 
-  // Hero Images
-  const updateHeroImages = (newImages) => {
+  // Hero section
+  const updateHeroSection = async (newImages, stats) => {
+    await setDoc(doc(db, "settings", "global"), {
+      heroImages: newImages,
+      heroStats: stats
+    }, { merge: true });
     setHeroImages(newImages);
-    updateSettings("heroImages", newImages);
+    setHeroStats(stats);
   };
 
   // Reviews
   const addReview = async (review) => {
-    setReviews([review, ...reviews]);
-    try {
-      const reviewId = review.id ? String(review.id) : String(Date.now());
-      await setDoc(doc(db, "reviews", reviewId), { ...review, id: reviewId });
-    } catch (e) { }
+    const reviewId = review.id ? String(review.id) : String(Date.now());
+    const newReview = { ...review, id: reviewId };
+    await setDoc(doc(db, "reviews", reviewId), newReview);
+    setReviews(currentReviews => [newReview, ...currentReviews.filter(item => String(item.id) !== reviewId)]);
   };
   const updateReview = async (id, updatedReview) => {
-    setReviews(reviews.map(r => String(r.id) === String(id) ? updatedReview : r));
-    try { await updateDoc(doc(db, "reviews", String(id)), updatedReview); } catch (e) { }
+    await updateDoc(doc(db, "reviews", String(id)), updatedReview);
+    setReviews(currentReviews => currentReviews.map(review => String(review.id) === String(id) ? updatedReview : review));
   };
   const deleteReview = async (id) => {
-    setReviews(reviews.filter(r => String(r.id) !== String(id)));
-    try { await deleteDoc(doc(db, "reviews", String(id))); } catch (e) { }
+    await deleteDoc(doc(db, "reviews", String(id)));
+    setReviews(currentReviews => currentReviews.filter(review => String(review.id) !== String(id)));
   };
 
   // Contact Info
-  const updateContactInfo = (newInfo) => {
+  const updateContactInfo = async (newInfo) => {
+    await updateSettings("contactInfo", newInfo);
     setContactInfo(newInfo);
-    updateSettings("contactInfo", newInfo);
   };
 
   // Legal Pages
-  const updateLegalPages = (newPages) => {
+  const updateLegalPages = async (newPages) => {
+    await updateSettings("legalPages", newPages);
     setLegalPages(newPages);
-    updateSettings("legalPages", newPages);
   };
 
   // Offers
   const addOffer = async (offer) => {
-    setOffers([offer, ...offers]);
-    try { await setDoc(doc(db, "offers", offer.id), offer); } catch (e) { }
+    await setDoc(doc(db, "offers", offer.id), offer);
+    setOffers(currentOffers => [offer, ...currentOffers.filter(item => item.id !== offer.id)]);
   };
   const updateOffer = async (id, updatedOffer) => {
-    setOffers(offers.map(o => o.id === id ? updatedOffer : o));
-    try { await updateDoc(doc(db, "offers", id), updatedOffer); } catch (e) { }
+    await updateDoc(doc(db, "offers", id), updatedOffer);
+    setOffers(currentOffers => currentOffers.map(offer => offer.id === id ? updatedOffer : offer));
   };
   const deleteOffer = async (id) => {
-    setOffers(offers.filter(o => o.id !== id));
-    try { await deleteDoc(doc(db, "offers", id)); } catch (e) { }
-  };
-
-  // Hero Stats
-  const updateHeroStats = (stats) => {
-    setHeroStats(stats);
-    updateSettings("heroStats", stats);
+    await deleteDoc(doc(db, "offers", id));
+    setOffers(currentOffers => currentOffers.filter(offer => offer.id !== id));
   };
 
   // Specials Categories
   const addSpecialCategory = async (category) => {
-    setSpecialsCategories([...specialsCategories, category]);
-    try { await setDoc(doc(db, "specials", category.id), category); } catch (e) { }
+    await setDoc(doc(db, "specials", category.id), category);
+    setSpecialsCategories(currentCategories => [...currentCategories.filter(item => item.id !== category.id), category]);
   };
   const updateSpecialCategory = async (id, updated) => {
-    setSpecialsCategories(specialsCategories.map(c => c.id === id ? updated : c));
-    try { await updateDoc(doc(db, "specials", id), updated); } catch (e) { }
+    await updateDoc(doc(db, "specials", id), updated);
+    setSpecialsCategories(currentCategories => currentCategories.map(category => category.id === id ? updated : category));
   };
   const deleteSpecialCategory = async (id) => {
-    setSpecialsCategories(specialsCategories.filter(c => c.id !== id));
-    try { await deleteDoc(doc(db, "specials", id)); } catch (e) { }
+    await deleteDoc(doc(db, "specials", id));
+    setSpecialsCategories(currentCategories => currentCategories.filter(category => category.id !== id));
   };
 
   // Auth
-  const login = (username, password) => {
-    if (username === adminCredentials.username && password === adminCredentials.password) {
-      setIsAuthenticated(true);
-      sessionStorage.setItem("admin_auth", "true");
-      return true;
-    }
-    return false;
-  };
+  const login = (email, password) => signInWithEmailAndPassword(auth, email, password);
 
 
-  // Cloudinary Image Upload Logic
+  // Cloudinary image upload; returned URLs are saved with product data in Firestore.
   const uploadImage = async (file) => {
     if (!file) return null;
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', 'sherize_preset');
+      formData.append("file", file);
+      formData.append("upload_preset", "sherize_preset");
 
-      const res = await fetch('https://api.cloudinary.com/v1_1/yjhf6lsp/auto/upload', {
-        method: 'POST',
-        body: formData,
+      const response = await fetch("https://api.cloudinary.com/v1_1/yjhf6lsp/auto/upload", {
+        method: "POST",
+        body: formData
       });
-      const data = await res.json();
-      if (data.secure_url) {
-        return data.secure_url;
-      } else {
-        throw new Error(data.error?.message || 'Upload failed');
+      const data = await response.json();
+      if (!response.ok || !data.secure_url) {
+        throw new Error(data.error?.message || "Cloudinary image upload failed.");
       }
+      return data.secure_url;
     } catch (error) {
-      console.error('Error uploading image to Cloudinary:', error);
-      alert('Failed to upload image. Check console for details.');
+      console.error("Failed to upload image to Cloudinary:", error);
+      alert(error instanceof Error ? error.message : "Failed to upload image.");
       return null;
     }
   };
 
-  const generateOtp = async () => {
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    try {
-      await setDoc(doc(db, "settings", "security"), { ...adminCredentials, pendingOtp: otp });
-      setAdminCredentials({ ...adminCredentials, pendingOtp: otp });
-      return otp;
-    } catch (e) {
-      console.error(e);
-      return null;
-    }
+  const changePassword = async (currentPassword, newPassword) => {
+    const user = auth.currentUser;
+    if (!user?.email) throw new Error("No signed-in Firebase account was found.");
+    const credential = EmailAuthProvider.credential(user.email, currentPassword);
+    await reauthenticateWithCredential(user, credential);
+    await updatePassword(user, newPassword);
   };
 
-  const verifyOtp = (inputOtp) => {
-    return adminCredentials.pendingOtp && inputOtp === adminCredentials.pendingOtp;
-  };
-
-  const changePassword = async (newPassword) => {
-    try {
-      await setDoc(doc(db, "settings", "security"), { username: adminCredentials.username, password: newPassword, pendingOtp: null });
-      setAdminCredentials({ ...adminCredentials, password: newPassword });
-      return true;
-    } catch (e) {
-      console.error(e);
-      return false;
-    }
-  };
-
-  const logout = () => {
-    setIsAuthenticated(false);
-    sessionStorage.removeItem("admin_auth");
-  };
+  const logout = () => signOut(auth);
 
   return (
     <AdminContext.Provider value={{
       products, addProduct, updateProduct, deleteProduct,
       categories, addCategory, updateCategory, deleteCategory,
-      heroImages, updateHeroImages,
+      heroImages, updateHeroSection,
       reviews, addReview, updateReview, deleteReview,
       contactInfo, updateContactInfo,
       legalPages, updateLegalPages,
       offers, addOffer, updateOffer, deleteOffer,
-      heroStats, updateHeroStats,
+      heroStats,
       specialsCategories, addSpecialCategory, updateSpecialCategory, deleteSpecialCategory,
-      isAuthenticated, login, logout, changePassword, adminCredentials, generateOtp, verifyOtp, uploadImage
+      isAuthenticated, adminEmail, login, logout, changePassword, uploadImage
     }}>
       {children}
     </AdminContext.Provider>

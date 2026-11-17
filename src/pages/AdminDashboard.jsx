@@ -1,9 +1,48 @@
-import React, { useState } from "react";
-import emailjs from "@emailjs/browser";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Package, Image as ImageIcon, List, MessageSquare, Settings, LogOut, Plus, Edit2, Trash2, Save, ShieldCheck, Lock, FileText, Tag, Star, Shirt } from "lucide-react";
+import { LayoutDashboard, Package, Image as ImageIcon, List, MessageSquare, Settings, LogOut, Plus, Edit2, Trash2, Save, ShieldCheck, Lock, FileText, Tag, Star, Shirt, LoaderCircle } from "lucide-react";
+import { toast } from "sonner";
 import { useAdmin } from "@/context/AdminContext";
-import { dressCategoryNames } from "@/data/dressProducts";
+import { ALL_DRESS_PRODUCTS, dressCategoryNames } from "@/data/dressProducts";
+import { PRODUCTS as DEFAULT_PRODUCTS } from "@/data/products";
+
+const runAdminAction = async (successMessage, operation) => {
+  try {
+    await operation();
+    toast.success(successMessage);
+    return true;
+  } catch (error) {
+    console.error("Admin action failed:", error);
+    toast.error("Could not save changes to Firebase", {
+      description: error instanceof Error ? error.message : "Check your Firebase connection and rules."
+    });
+    return false;
+  }
+};
+
+function useImageUpload(uploadImage, setFormData, field) {
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleUpload = async (event) => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const url = await uploadImage(file);
+      if (url) {
+        setFormData(current => ({ ...current, [field]: url }));
+        toast.success("Image uploaded");
+      }
+    } finally {
+      setIsUploading(false);
+      input.value = "";
+    }
+  };
+
+  return { isUploading, handleUpload };
+}
 
 export default function AdminDashboard() {
   const { isAuthenticated, login, logout } = useAdmin();
@@ -91,14 +130,17 @@ export default function AdminDashboard() {
 
 function AdminLogin() {
   const { login } = useAdmin();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!login(username, password)) {
-      setError("Invalid username or password");
+    try {
+      await login(email, password);
+      setError("");
+    } catch (loginError) {
+      setError(loginError.message || "Firebase Authentication failed");
     }
   };
 
@@ -109,15 +151,15 @@ function AdminLogin() {
           <Lock size={32} className="text-primary" />
         </div>
         <h1 className="font-serif text-2xl font-bold text-gray-900 mb-2">Admin Access</h1>
-        <p className="text-sm text-gray-500 mb-8">Enter your credentials to access the store dashboard.</p>
+        <p className="text-sm text-gray-500 mb-8">Sign in with your Firebase admin email and password.</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Username"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Admin email"
               className="w-full border border-gray-300 p-3 rounded-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-center mb-4"
               autoFocus
             />
@@ -150,19 +192,24 @@ function CategoriesManager() {
   const [editingCat, setEditingCat] = useState(null);
   const [editValue, setEditValue] = useState("");
 
-  const handleAdd = (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
     if (newCategory.trim() && !categories.includes(newCategory.trim())) {
-      addCategory(newCategory.trim());
-      setNewCategory("");
+      if (await runAdminAction("Category added", () => addCategory(newCategory.trim()))) {
+        setNewCategory("");
+      }
     }
   };
 
-  const handleSave = (oldCat) => {
+  const handleSave = async (oldCat) => {
     if (editValue.trim() && editValue.trim() !== oldCat && !categories.includes(editValue.trim())) {
-      updateCategory(oldCat, editValue.trim());
+      if (!await runAdminAction("Category updated", () => updateCategory(oldCat, editValue.trim()))) return;
     }
     setEditingCat(null);
+  };
+
+  const handleDelete = async (category) => {
+    await runAdminAction("Category deleted", () => deleteCategory(category));
   };
 
   return (
@@ -214,7 +261,7 @@ function CategoriesManager() {
                   <Edit2 size={18} />
                 </button>
               )}
-              <button onClick={() => deleteCategory(cat)} className="text-red-600 hover:bg-red-50 p-2 rounded transition-colors" title="Delete">
+              <button onClick={() => handleDelete(cat)} className="text-red-600 hover:bg-red-50 p-2 rounded transition-colors" title="Delete">
                 <Trash2 size={18} />
               </button>
             </div>
@@ -236,6 +283,7 @@ function ProductsManager() {
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({});
   const [isAdding, setIsAdding] = useState(false);
+  const { isUploading: isUploadingImage, handleUpload: handleImageUpload } = useImageUpload(uploadImage, setFormData, "image");
 
   const handleEdit = (product) => {
     setEditingId(product.id);
@@ -263,14 +311,22 @@ function ProductsManager() {
   };
 
 
-  const handleSave = () => {
-    if (isAdding) {
-      addProduct(formData);
-    } else {
-      updateProduct(formData.id, formData);
+  const handleSave = async () => {
+    const saved = await runAdminAction(isAdding ? "Product added" : "Product updated", async () => {
+      if (isAdding) {
+        await addProduct(formData);
+      } else {
+        await updateProduct(formData.id, formData);
+      }
+    });
+    if (saved) {
+      setEditingId(null);
+      setIsAdding(false);
     }
-    setEditingId(null);
-    setIsAdding(false);
+  };
+
+  const handleDelete = async (id) => {
+    await runAdminAction("Product deleted", () => deleteProduct(id));
   };
 
   return (
@@ -293,18 +349,10 @@ function ProductsManager() {
               <label className="block text-xs font-bold text-gray-600 mb-1">Image URL or Upload File</label>
               <div className="flex gap-2">
                 <input type="text" className="flex-1 border p-2 rounded min-w-0" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} placeholder="https://..." />
-                <label className="bg-primary text-white cursor-pointer rounded px-4 py-2 flex items-center justify-center relative hover:bg-primary/90 transition flex-shrink-0 text-sm font-medium">
-                  Upload
-                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                    if (e.target.files[0]) {
-
-                      const url = await uploadImage(e.target.files[0]);
-                      if (url) {
-                        setFormData({ ...formData, image: url });
-                        alert('Upload successful');
-                      }
-                    }
-                  }} />
+                <label className={`bg-primary text-white rounded px-4 py-2 flex items-center justify-center gap-2 relative transition flex-shrink-0 text-sm font-medium ${isUploadingImage ? "opacity-70 cursor-wait" : "cursor-pointer hover:bg-primary/90"}`}>
+                  {isUploadingImage && <LoaderCircle size={16} className="animate-spin" />}
+                  {isUploadingImage ? "Uploading..." : "Upload"}
+                  <input type="file" accept="image/*" disabled={isUploadingImage} className="hidden" onChange={handleImageUpload} />
                 </label>
               </div>
             </div>
@@ -342,7 +390,7 @@ function ProductsManager() {
                 <td className="p-3 text-gray-600">{p.category}</td>
                 <td className="p-3 text-right">
                   <button onClick={() => handleEdit(p)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded mr-2"><Edit2 size={16} /></button>
-                  <button onClick={() => deleteProduct(p.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
+                  <button onClick={() => handleDelete(p.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
                 </td>
               </tr>
             ))}
@@ -359,6 +407,7 @@ function DressesManager() {
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({});
   const [isAdding, setIsAdding] = useState(false);
+  const { isUploading: isUploadingImage, handleUpload: handleImageUpload } = useImageUpload(uploadImage, setFormData, "image");
 
   const handleEdit = (product) => {
     setEditingId(product.id);
@@ -386,14 +435,22 @@ function DressesManager() {
   };
 
 
-  const handleSave = () => {
-    if (isAdding) {
-      addProduct(formData);
-    } else {
-      updateProduct(formData.id, formData);
+  const handleSave = async () => {
+    const saved = await runAdminAction(isAdding ? "Dress added" : "Dress updated", async () => {
+      if (isAdding) {
+        await addProduct(formData);
+      } else {
+        await updateProduct(formData.id, formData);
+      }
+    });
+    if (saved) {
+      setEditingId(null);
+      setIsAdding(false);
     }
-    setEditingId(null);
-    setIsAdding(false);
+  };
+
+  const handleDelete = async (id) => {
+    await runAdminAction("Dress deleted", () => deleteProduct(id));
   };
 
   return (
@@ -416,18 +473,10 @@ function DressesManager() {
               <label className="block text-xs font-bold text-gray-600 mb-1">Image URL or Upload File</label>
               <div className="flex gap-2">
                 <input type="text" className="flex-1 border p-2 rounded min-w-0" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} placeholder="https://..." />
-                <label className="bg-primary text-white cursor-pointer rounded px-4 py-2 flex items-center justify-center relative hover:bg-primary/90 transition flex-shrink-0 text-sm font-medium">
-                  Upload
-                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                    if (e.target.files[0]) {
-                      e.target.parentNode.innerHTML = 'Uploading...';
-                      const url = await uploadImage(e.target.files[0]);
-                      if (url) {
-                        setFormData({ ...formData, image: url });
-                        alert('Upload successful!');
-                      }
-                    }
-                  }} />
+                <label className={`bg-primary text-white rounded px-4 py-2 flex items-center justify-center gap-2 relative transition flex-shrink-0 text-sm font-medium ${isUploadingImage ? "opacity-70 cursor-wait" : "cursor-pointer hover:bg-primary/90"}`}>
+                  {isUploadingImage && <LoaderCircle size={16} className="animate-spin" />}
+                  {isUploadingImage ? "Uploading..." : "Upload"}
+                  <input type="file" accept="image/*" disabled={isUploadingImage} className="hidden" onChange={handleImageUpload} />
                 </label>
               </div>
             </div>
@@ -465,7 +514,7 @@ function DressesManager() {
                 <td className="p-3 text-gray-600">{p.category}</td>
                 <td className="p-3 text-right">
                   <button onClick={() => handleEdit(p)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded mr-2"><Edit2 size={16} /></button>
-                  <button onClick={() => deleteProduct(p.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
+                  <button onClick={() => handleDelete(p.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
                 </td>
               </tr>
             ))}
@@ -478,15 +527,20 @@ function DressesManager() {
 
 
 function HeroManager() {
-  const { heroImages, updateHeroImages, heroStats, updateHeroStats, uploadImage } = useAdmin();
+  const { heroImages, updateHeroSection, heroStats, uploadImage } = useAdmin();
   const [images, setImages] = useState(heroImages);
   const [stats, setStats] = useState(heroStats || { sareesCurated: "500+", avgExperience: "5", showroomTrips: "0" });
 
+  useEffect(() => {
+    setImages(heroImages);
+  }, [heroImages]);
 
-  const handleSave = () => {
-    updateHeroImages(images);
-    updateHeroStats(stats);
-    alert("Hero section updated successfully!");
+  useEffect(() => {
+    setStats(heroStats);
+  }, [heroStats]);
+
+  const handleSave = async () => {
+    await runAdminAction("Hero section updated", () => updateHeroSection(images, stats));
   };
 
   return (
@@ -549,11 +603,24 @@ function ReviewsManager() {
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({});
   const [isAdding, setIsAdding] = useState(false);
+  const { isUploading: isUploadingImage, handleUpload: handleImageUpload } = useImageUpload(uploadImage, setFormData, "thumbnail");
 
   const handleEdit = (r) => { setEditingId(r.id); setFormData(r); setIsAdding(false); };
   const handleAdd = () => { setEditingId("new"); setIsAdding(true); setFormData({ id: Date.now(), name: "", location: "", content: "", rating: 5, type: "text", thumbnail: "" }); };
 
-  const handleSave = () => { isAdding ? addReview(formData) : updateReview(formData.id, formData); setEditingId(null); setIsAdding(false); };
+  const handleSave = async () => {
+    const saved = await runAdminAction(isAdding ? "Review added" : "Review updated", () =>
+      isAdding ? addReview(formData) : updateReview(formData.id, formData)
+    );
+    if (saved) {
+      setEditingId(null);
+      setIsAdding(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    await runAdminAction("Review deleted", () => deleteReview(id));
+  };
 
   return (
     <div className="p-6">
@@ -576,18 +643,10 @@ function ReviewsManager() {
               <label className="block text-xs font-bold text-gray-600 mb-1">Image/Video Thumbnail URL or Upload</label>
               <div className="flex gap-2">
                 <input type="text" className="flex-1 border p-2 rounded min-w-0" value={formData.thumbnail} onChange={e => setFormData({ ...formData, thumbnail: e.target.value })} placeholder="https://..." />
-                <label className="bg-primary text-white cursor-pointer rounded px-4 py-2 flex items-center justify-center relative hover:bg-primary/90 transition flex-shrink-0 text-sm font-medium">
-                  Upload
-                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                    if (e.target.files[0]) {
-                      e.target.parentNode.innerHTML = 'Uploading...';
-                      const url = await uploadImage(e.target.files[0]);
-                      if (url) {
-                        setFormData({ ...formData, thumbnail: url });
-                        alert('Upload successful!');
-                      }
-                    }
-                  }} />
+                <label className={`bg-primary text-white rounded px-4 py-2 flex items-center justify-center gap-2 relative transition flex-shrink-0 text-sm font-medium ${isUploadingImage ? "opacity-70 cursor-wait" : "cursor-pointer hover:bg-primary/90"}`}>
+                  {isUploadingImage && <LoaderCircle size={16} className="animate-spin" />}
+                  {isUploadingImage ? "Uploading..." : "Upload"}
+                  <input type="file" accept="image/*" disabled={isUploadingImage} className="hidden" onChange={handleImageUpload} />
                 </label>
               </div>
             </div>}
@@ -610,7 +669,7 @@ function ReviewsManager() {
             </div>
             <div className="flex gap-2 shrink-0">
               <button onClick={() => handleEdit(r)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={16} /></button>
-              <button onClick={() => deleteReview(r.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
+              <button onClick={() => handleDelete(r.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
             </div>
           </div>
         ))}
@@ -620,84 +679,71 @@ function ReviewsManager() {
 }
 
 function SettingsManager() {
-  const { addProduct, changePassword, adminCredentials, generateOtp, verifyOtp, updateContactInfo, contactInfo, uploadImage } = useAdmin();
+  const { addProduct, changePassword, adminEmail, updateContactInfo, contactInfo, uploadImage } = useAdmin();
 
   const [info, setInfo] = useState(contactInfo || { phone: "", email: "", address: "", hours: "" });
   const [passData, setPassData] = useState({ current: '', newPass: '', confirm: '' });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
 
-  // OTP State
-  const [otpSent, setOtpSent] = useState(false);
-  const [inputOtp, setInputOtp] = useState("");
-  const [isSending, setIsSending] = useState(false);
+  useEffect(() => {
+    setInfo(contactInfo);
+  }, [contactInfo]);
 
-  // EmailJS Configuration (PLACEHOLDERS)
-  const EMAILJS_SERVICE_ID = "service_q5c935p";
-  const EMAILJS_TEMPLATE_ID = "template_v71q9f7";
-  const EMAILJS_PUBLIC_KEY = "q4xO_P9C7WB1E_otP";
-
-
-  const handleSave = () => {
-    updateContactInfo(info);
-    alert("Settings updated successfully!");
+  const handleSave = async () => {
+    try {
+      await updateContactInfo(info);
+      toast.success("Site settings saved to Firebase");
+    } catch (error) {
+      toast.error("Failed to save site settings", {
+        description: error instanceof Error ? error.message : "Check your Firestore rules and connection."
+      });
+    }
   };
 
-  const handleRequestOtp = async () => {
-    if (passData.current !== adminCredentials.password) return alert("Current password is incorrect");
-    if (passData.newPass !== passData.confirm) return alert("New passwords do not match");
-    if (passData.newPass.length < 6) return alert("Password must be at least 6 characters");
-
-    setIsSending(true);
-    const otp = await generateOtp();
-    if (!otp) {
-      alert("Failed to generate OTP");
-      setIsSending(false);
+  const handleChangePassword = async () => {
+    if (passData.newPass.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    if (passData.newPass !== passData.confirm) {
+      toast.error("New passwords do not match");
       return;
     }
 
+    setIsChangingPassword(true);
     try {
-      if (EMAILJS_SERVICE_ID === "YOUR_SERVICE_ID") {
-        console.warn("EmailJS is not configured yet! The OTP is:", otp);
-        alert("EmailJS keys are missing! Check the browser console to see the OTP for testing.");
-      } else {
-        await emailjs.send(
-          EMAILJS_SERVICE_ID,
-          EMAILJS_TEMPLATE_ID,
-          {
-            to_email: info.email || "admin@example.com",
-            otp_code: otp
-          },
-          EMAILJS_PUBLIC_KEY
-        );
-      }
-      setOtpSent(true);
-      alert("An OTP has been sent to the main admin's email!");
-    } catch (err) {
-      console.error("EmailJS Error:", err);
-      alert("Failed to send OTP email.");
+      await changePassword(passData.current, passData.newPass);
+      toast.success("Firebase account password changed");
+      setPassData({ current: "", newPass: "", confirm: "" });
+    } catch (error) {
+      toast.error("Failed to change Firebase password", {
+        description: error instanceof Error ? error.message : "Check the current password and try again."
+      });
     } finally {
-      setIsSending(false);
+      setIsChangingPassword(false);
     }
   };
 
-  const handleVerifyAndChange = async () => {
-    if (verifyOtp(inputOtp)) {
-      const success = await changePassword(passData.newPass);
-      if (success) {
-        alert("Password changed successfully!");
-        setPassData({ current: '', newPass: '', confirm: '' });
-        setInputOtp("");
-        setOtpSent(false);
-      } else {
-        alert("Failed to change password in database.");
-      }
-    } else {
-      alert("Invalid or expired OTP!");
+  const handleSeedDatabase = async () => {
+    setIsSeeding(true);
+    const productsToSeed = [...DEFAULT_PRODUCTS, ...ALL_DRESS_PRODUCTS];
+    try {
+      await Promise.all(productsToSeed.map(product => addProduct(product)));
+      toast.success(`Uploaded ${productsToSeed.length} products to Firestore`);
+    } catch (error) {
+      toast.error("Failed to seed products", {
+        description: error instanceof Error ? error.message : "Check your Firestore rules and connection."
+      });
+    } finally {
+      setIsSeeding(false);
     }
   };
 
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-serif text-gray-900 mb-6">Site Settings (Contact Info)</h2>
+      <h2 className="text-2xl font-serif text-gray-900 mb-6">Site Settings</h2>
+      <p className="text-sm text-gray-500 mb-6">Changes are saved to Firebase and shared with the storefront.</p>
 
       <div className="space-y-4 max-w-xl">
         <div>
@@ -705,7 +751,7 @@ function SettingsManager() {
           <input type="text" className="w-full border p-2 rounded" value={info.phone} onChange={e => setInfo({ ...info, phone: e.target.value })} />
         </div>
         <div>
-          <label className="block text-xs font-bold text-gray-600 mb-1">Admin Email Address (For OTPs)</label>
+          <label className="block text-xs font-bold text-gray-600 mb-1">Store Email Address</label>
           <input type="text" className="w-full border p-2 rounded" value={info.email} onChange={e => setInfo({ ...info, email: e.target.value })} />
         </div>
         <div>
@@ -726,52 +772,33 @@ function SettingsManager() {
 
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mt-12">
         <h3 className="text-lg font-bold text-gray-900 mb-4">Security & Password</h3>
-
-        {!otpSent ? (
-          <div className="space-y-4 max-w-xl">
-            <div>
-              <label className="block text-xs font-bold text-gray-600 mb-1">Current Password</label>
-              <input type="password" placeholder="Enter current password" className="w-full border p-2 rounded" value={passData.current} onChange={e => setPassData({ ...passData, current: e.target.value })} />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-600 mb-1">New Password</label>
-              <input type="password" placeholder="Enter new password" className="w-full border p-2 rounded" value={passData.newPass} onChange={e => setPassData({ ...passData, newPass: e.target.value })} />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-600 mb-1">Confirm New Password</label>
-              <input type="password" placeholder="Confirm new password" className="w-full border p-2 rounded" value={passData.confirm} onChange={e => setPassData({ ...passData, confirm: e.target.value })} />
-            </div>
-            <button
-              onClick={handleRequestOtp}
-              disabled={isSending}
-              className="mt-2 px-4 py-2 bg-gray-900 text-white rounded font-medium hover:bg-black transition disabled:opacity-50"
-            >
-              {isSending ? "Sending OTP..." : "Request OTP to Change Password"}
-            </button>
+        <p className="text-sm text-gray-600 mb-4">Firebase Authentication account: {adminEmail || "Not signed in"}</p>
+        <div className="space-y-4 max-w-xl">
+          <div>
+            <label className="block text-xs font-bold text-gray-600 mb-1">Current Password</label>
+            <input type="password" autoComplete="current-password" placeholder="Enter current password" className="w-full border p-2 rounded" value={passData.current} onChange={e => setPassData({ ...passData, current: e.target.value })} />
           </div>
-        ) : (
-          <div className="space-y-4 max-w-xl bg-orange-50 p-4 rounded border border-orange-100">
-            <h4 className="font-bold text-orange-900">Enter OTP</h4>
-            <p className="text-sm text-orange-800 mb-2">We sent a 6-digit OTP to the main admin's email ({info.email}). Please enter it below to authorize the password change.</p>
-            <div>
-              <input type="text" placeholder="e.g. 123456" className="w-full border p-2 rounded font-mono text-center text-lg tracking-widest" value={inputOtp} onChange={e => setInputOtp(e.target.value)} />
-            </div>
-            <div className="flex gap-2">
-              <button onClick={handleVerifyAndChange} className="px-4 py-2 bg-green-600 text-white rounded font-medium hover:bg-green-700 transition">
-                Verify & Change Password
-              </button>
-              <button onClick={() => setOtpSent(false)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded font-medium hover:bg-gray-300 transition">
-                Cancel
-              </button>
-            </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-600 mb-1">New Password</label>
+            <input type="password" autoComplete="new-password" placeholder="Enter new password" className="w-full border p-2 rounded" value={passData.newPass} onChange={e => setPassData({ ...passData, newPass: e.target.value })} />
           </div>
-        )}
+          <div>
+            <label className="block text-xs font-bold text-gray-600 mb-1">Confirm New Password</label>
+            <input type="password" autoComplete="new-password" placeholder="Confirm new password" className="w-full border p-2 rounded" value={passData.confirm} onChange={e => setPassData({ ...passData, confirm: e.target.value })} />
+          </div>
+          <button
+            onClick={handleChangePassword}
+            disabled={isChangingPassword || !passData.current || !passData.newPass || !passData.confirm}
+            className="mt-2 px-4 py-2 bg-gray-900 text-white rounded font-medium hover:bg-black transition disabled:opacity-50"
+          >
+            {isChangingPassword ? "Changing Password..." : "Change Firebase Password"}
+          </button>
+        </div>
       </div>
 
       <div className="bg-gray-100 p-6 rounded-lg shadow-sm border border-gray-200 mt-12">
         <h3 className="text-lg font-bold text-gray-900 mb-4">Database Operations</h3>
-        <h3 className="text-lg font-bold text-gray-900 mb-4">Database Operations</h3>
-        <p className="text-sm text-gray-600 mb-4">Click below to upload all your static default products (Sarees and Dresses) to your new Firebase real-time database. (Note: Only do this once to populate your new database!)</p>
+        <p className="text-sm text-gray-600 mb-4">Upload the built-in saree and dress catalog to Firestore. Existing documents with matching IDs will be replaced.</p>
         <button
           onClick={handleSeedDatabase}
           disabled={isSeeding}
@@ -788,10 +815,12 @@ function LegalManager() {
   const { legalPages, updateLegalPages } = useAdmin();
   const [pages, setPages] = useState(legalPages);
 
+  useEffect(() => {
+    setPages(legalPages);
+  }, [legalPages]);
 
-  const handleSave = () => {
-    updateLegalPages(pages);
-    alert("Legal pages updated successfully!");
+  const handleSave = async () => {
+    await runAdminAction("Legal pages updated", () => updateLegalPages(pages));
   };
 
   return (
@@ -832,6 +861,7 @@ function OffersManager() {
   const { offers, addOffer, updateOffer, deleteOffer, uploadImage } = useAdmin();
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ title: "", description: "", image: "", isActive: true });
+  const { isUploading: isUploadingImage, handleUpload: handleImageUpload } = useImageUpload(uploadImage, setFormData, "image");
 
   const resetForm = () => {
     setFormData({ title: "", description: "", image: "", isActive: true });
@@ -839,15 +869,20 @@ function OffersManager() {
   };
 
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.title || !formData.image) return;
 
-    if (editingId) {
-      updateOffer(editingId, { ...formData, id: editingId });
-    } else {
-      addOffer({ ...formData, id: `offer-${Date.now()}` });
-    }
-    resetForm();
+    const saved = await runAdminAction(editingId ? "Offer updated" : "Offer added", () => {
+      if (editingId) {
+        return updateOffer(editingId, { ...formData, id: editingId });
+      }
+      return addOffer({ ...formData, id: `offer-${Date.now()}` });
+    });
+    if (saved) resetForm();
+  };
+
+  const handleDelete = async (id) => {
+    await runAdminAction("Offer deleted", () => deleteOffer(id));
   };
 
   return (
@@ -866,18 +901,10 @@ function OffersManager() {
           <input type="text" placeholder="Offer Title" className="border p-2 rounded" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
           <div className="flex gap-2">
             <input type="text" placeholder="Image URL (e.g. https://...)" className="flex-1 border p-2 rounded min-w-0" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} />
-            <label className="bg-primary text-white cursor-pointer rounded px-4 py-2 flex items-center justify-center relative hover:bg-primary/90 transition flex-shrink-0 text-sm font-medium">
-              Upload
-              <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                if (e.target.files[0]) {
-                  e.target.parentNode.innerHTML = 'Uploading...';
-                  const url = await uploadImage(e.target.files[0]);
-                  if (url) {
-                    setFormData({ ...formData, image: url });
-                    alert('Upload successful!');
-                  }
-                }
-              }} />
+            <label className={`bg-primary text-white rounded px-4 py-2 flex items-center justify-center gap-2 relative transition flex-shrink-0 text-sm font-medium ${isUploadingImage ? "opacity-70 cursor-wait" : "cursor-pointer hover:bg-primary/90"}`}>
+              {isUploadingImage && <LoaderCircle size={16} className="animate-spin" />}
+              {isUploadingImage ? "Uploading..." : "Upload"}
+              <input type="file" accept="image/*" disabled={isUploadingImage} className="hidden" onChange={handleImageUpload} />
             </label>
           </div>
           <textarea placeholder="Offer Description" className="border p-2 rounded md:col-span-2" rows={3} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
@@ -902,7 +929,7 @@ function OffersManager() {
             </div>
             <div className="flex gap-2">
               <button onClick={() => { setFormData(offer); setEditingId(offer.id); }} className="p-2 text-blue-600 bg-blue-50 rounded hover:bg-blue-100"><Edit2 size={16} /></button>
-              <button onClick={() => deleteOffer(offer.id)} className="p-2 text-red-600 bg-red-50 rounded hover:bg-red-100"><Trash2 size={16} /></button>
+              <button onClick={() => handleDelete(offer.id)} className="p-2 text-red-600 bg-red-50 rounded hover:bg-red-100"><Trash2 size={16} /></button>
             </div>
           </div>
         ))}
@@ -922,18 +949,23 @@ function SpecialsManager() {
   };
 
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name || !formData.subtitle) return;
 
     // Generate an ID if it's new
     const idToSave = formData.id || formData.name.toLowerCase().replace(/\s+/g, '-');
 
-    if (editingId) {
-      updateSpecialCategory(editingId, { ...formData, id: idToSave });
-    } else {
-      addSpecialCategory({ ...formData, id: idToSave });
-    }
-    resetForm();
+    const saved = await runAdminAction(editingId ? "Special category updated" : "Special category added", () => {
+      if (editingId) {
+        return updateSpecialCategory(editingId, { ...formData, id: idToSave });
+      }
+      return addSpecialCategory({ ...formData, id: idToSave });
+    });
+    if (saved) resetForm();
+  };
+
+  const handleDelete = async (id) => {
+    await runAdminAction("Special category deleted", () => deleteSpecialCategory(id));
   };
 
   return (
@@ -987,7 +1019,7 @@ function SpecialsManager() {
               </div>
               <div className="flex gap-2">
                 <button onClick={() => { setFormData(cat); setEditingId(catId); }} className="p-2 text-blue-600 bg-blue-50 rounded hover:bg-blue-100"><Edit2 size={16} /></button>
-                <button onClick={() => deleteSpecialCategory(catId)} className="p-2 text-red-600 bg-red-50 rounded hover:bg-red-100"><Trash2 size={16} /></button>
+                <button onClick={() => handleDelete(catId)} className="p-2 text-red-600 bg-red-50 rounded hover:bg-red-100"><Trash2 size={16} /></button>
               </div>
             </div>
           );
