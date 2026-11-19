@@ -5,9 +5,12 @@ import { Footer } from "@/components/site/Footer";
 import { MobileAppNav } from "@/components/site/MobileAppNav";
 import { CartDrawer } from "@/components/ecommerce/CartDrawer";
 import { BottomNav } from "@/components/site/BottomNav";
+import { useAdmin } from "@/context/AdminContext";
 
 function LayoutComponent() {
   const { pathname } = useLocation();
+  const { contactInfo } = useAdmin();
+  const whatsappNumber = String(contactInfo?.phone || "917093010264").replace(/\D/g, "");
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -23,7 +26,7 @@ function LayoutComponent() {
       <BottomNav />
       <MobileAppNav />
       <a
-        href="https://wa.me/917093010264"
+        href={`https://wa.me/${whatsappNumber}`}
         target="_blank"
         rel="noreferrer"
         aria-label="WhatsApp"

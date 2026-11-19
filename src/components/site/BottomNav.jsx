@@ -6,6 +6,8 @@ export function BottomNav() {
   const location = useLocation();
   const { getCartCount, setIsCartOpen } = useCart();
 
+  if (location.pathname.startsWith("/product/") || location.pathname === "/checkout") return null;
+
   const navItems = [
     { icon: Home, label: "Home", path: "/" },
     { icon: Grid, label: "Categories", path: "/collections" },

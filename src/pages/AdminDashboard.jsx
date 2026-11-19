@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useAdmin } from "@/context/AdminContext";
 import { ALL_DRESS_PRODUCTS, dressCategoryNames } from "@/data/dressProducts";
 import { PRODUCTS as DEFAULT_PRODUCTS } from "@/data/products";
+import { COLOR_OPTIONS, FABRIC_OPTIONS, OCCASION_OPTIONS } from "@/data/searchOptions";
 
 const runAdminAction = async (successMessage, operation) => {
   try {
@@ -34,6 +35,37 @@ function useImageUpload(uploadImage, setFormData, field) {
       if (url) {
         setFormData(current => ({ ...current, [field]: url }));
         toast.success("Image uploaded");
+      }
+    } finally {
+      setIsUploading(false);
+      input.value = "";
+    }
+  };
+
+  return { isUploading, handleUpload };
+}
+
+function useGalleryUpload(uploadImage, setFormData) {
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleUpload = async (event) => {
+    const input = event.currentTarget;
+    const files = Array.from(input.files || []);
+    if (!files.length) return;
+
+    setIsUploading(true);
+    try {
+      const urls = [];
+      for (const file of files) {
+        const url = await uploadImage(file);
+        if (url) urls.push(url);
+      }
+      if (urls.length) {
+        setFormData(current => ({
+          ...current,
+          images: [...new Set([...(current.images || []), ...urls])]
+        }));
+        toast.success(`${urls.length} gallery image${urls.length === 1 ? "" : "s"} uploaded`);
       }
     } finally {
       setIsUploading(false);
@@ -305,6 +337,7 @@ function ProductsManager() {
   const [formData, setFormData] = useState({});
   const [isAdding, setIsAdding] = useState(false);
   const { isUploading: isUploadingImage, handleUpload: handleImageUpload } = useImageUpload(uploadImage, setFormData, "image");
+  const { isUploading: isUploadingGallery, handleUpload: handleGalleryUpload } = useGalleryUpload(uploadImage, setFormData);
 
   const handleEdit = (product) => {
     setEditingId(product.id);
@@ -325,6 +358,16 @@ function ProductsManager() {
       category: catName,
       image: "",
       description: "",
+      fabric: "",
+      color: "",
+      occasion: "",
+      images: [],
+      blouseDetails: "",
+      weave: "",
+      washCare: "",
+      deliveryEstimate: "48 hours",
+      deliveryInfo: "",
+      returnPolicy: "",
       isNew: false,
       isFeatured: false,
       stock: 10
@@ -367,9 +410,9 @@ function ProductsManager() {
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Price (₹)</label><input type="number" className="w-full border p-2 rounded" value={formData.price} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} /></div>
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Category</label><select className="w-full border p-2 rounded" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>{categories.map((c, i) => { const cName = typeof c === 'string' ? c : (c.name || c.id || `cat-${i}`); return <option key={cName} value={cName}>{cName}</option> })}</select></div>
             <div>
-              <label className="block text-xs font-bold text-gray-600 mb-1">Image URL or Upload File</label>
-              <div className="flex gap-2">
-                <input type="text" className="flex-1 border p-2 rounded min-w-0" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} placeholder="https://..." />
+              <label className="block text-xs font-bold text-gray-600 mb-1">Main Product Image</label>
+              <div className="flex items-center gap-3">
+                {formData.image && <img src={formData.image} alt="" className="h-16 w-16 rounded object-cover border" />}
                 <label className={`bg-primary text-white rounded px-4 py-2 flex items-center justify-center gap-2 relative transition flex-shrink-0 text-sm font-medium ${isUploadingImage ? "opacity-70 cursor-wait" : "cursor-pointer hover:bg-primary/90"}`}>
                   {isUploadingImage && <LoaderCircle size={16} className="animate-spin" />}
                   {isUploadingImage ? "Uploading..." : "Upload"}
@@ -377,7 +420,32 @@ function ProductsManager() {
                 </label>
               </div>
             </div>
-            <div><label className="block text-xs font-bold text-gray-600 mb-1">Stock Quantity</label><input type="number" className="w-full border p-2 rounded" value={formData.stock || 0} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Availability</label><select className="w-full border p-2 rounded" value={(formData.stock || 0) > 0 ? "available" : "unavailable"} onChange={e => setFormData({ ...formData, stock: e.target.value === "available" ? 10 : 0 })}><option value="available">In stock</option><option value="unavailable">Out of stock</option></select></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Fabric</label><select className="w-full border p-2 rounded" value={Array.isArray(formData.fabric) ? formData.fabric[0] : (formData.fabric || "")} onChange={e => setFormData({ ...formData, fabric: e.target.value })}><option value="">Select fabric</option>{FABRIC_OPTIONS.map(value => <option key={value} value={value}>{value}</option>)}</select></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Color</label><select className="w-full border p-2 rounded" value={Array.isArray(formData.color) ? formData.color[0] : (formData.color || "")} onChange={e => setFormData({ ...formData, color: e.target.value })}><option value="">Select color</option>{COLOR_OPTIONS.map(value => <option key={value} value={value}>{value}</option>)}</select></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Occasion</label><select className="w-full border p-2 rounded" value={Array.isArray(formData.occasion) ? formData.occasion[0] : (formData.occasion || "")} onChange={e => setFormData({ ...formData, occasion: e.target.value })}><option value="">Select occasion</option>{OCCASION_OPTIONS.map(value => <option key={value} value={value}>{value}</option>)}</select></div>
+            <div className="col-span-2">
+              <label className="block text-xs font-bold text-gray-600 mb-2">Additional Product Images</label>
+              <div className="flex flex-wrap gap-3">
+                {(formData.images || []).map((url, index) => (
+                  <div key={`${url}-${index}`} className="relative h-20 w-20">
+                    <img src={url} alt={`Gallery ${index + 1}`} className="h-full w-full rounded object-cover border" />
+                    <button type="button" onClick={() => setFormData(current => ({ ...current, images: current.images.filter((_, imageIndex) => imageIndex !== index) }))} className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[11px] text-white" aria-label="Remove gallery image">×</button>
+                  </div>
+                ))}
+                <label className={`flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded border border-dashed border-gray-400 text-xs text-gray-600 ${isUploadingGallery ? "opacity-70" : "hover:border-primary hover:text-primary"}`}>
+                  {isUploadingGallery ? <LoaderCircle size={18} className="animate-spin" /> : <Plus size={18} />}
+                  <span className="mt-1">{isUploadingGallery ? "Uploading" : "Add images"}</span>
+                  <input type="file" accept="image/*" multiple disabled={isUploadingGallery} className="hidden" onChange={handleGalleryUpload} />
+                </label>
+              </div>
+            </div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Blouse Details</label><input type="text" className="w-full border p-2 rounded" value={formData.blouseDetails || ""} onChange={e => setFormData({ ...formData, blouseDetails: e.target.value })} placeholder="Included blouse piece, running blouse..." /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Weave</label><input type="text" className="w-full border p-2 rounded" value={formData.weave || ""} onChange={e => setFormData({ ...formData, weave: e.target.value })} placeholder="Handloom, machine woven..." /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Wash Care</label><input type="text" className="w-full border p-2 rounded" value={formData.washCare || ""} onChange={e => setFormData({ ...formData, washCare: e.target.value })} placeholder="Dry clean only" /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Delivery Estimate</label><input type="text" className="w-full border p-2 rounded" value={formData.deliveryEstimate || ""} onChange={e => setFormData({ ...formData, deliveryEstimate: e.target.value })} placeholder="2–5 business days" /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Delivery Information</label><input type="text" className="w-full border p-2 rounded" value={formData.deliveryInfo || ""} onChange={e => setFormData({ ...formData, deliveryInfo: e.target.value })} placeholder="Free delivery within Hyderabad" /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Return / Exchange Policy</label><input type="text" className="w-full border p-2 rounded" value={formData.returnPolicy || ""} onChange={e => setFormData({ ...formData, returnPolicy: e.target.value })} placeholder="Exchange within 7 days" /></div>
             <div className="flex items-center gap-4 mt-6">
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={formData.isNew} onChange={e => setFormData({ ...formData, isNew: e.target.checked })} /> New Arrival</label>
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={formData.isFeatured} onChange={e => setFormData({ ...formData, isFeatured: e.target.checked })} /> Featured Masterpiece</label>
@@ -429,6 +497,7 @@ function DressesManager() {
   const [formData, setFormData] = useState({});
   const [isAdding, setIsAdding] = useState(false);
   const { isUploading: isUploadingImage, handleUpload: handleImageUpload } = useImageUpload(uploadImage, setFormData, "image");
+  const { isUploading: isUploadingGallery, handleUpload: handleGalleryUpload } = useGalleryUpload(uploadImage, setFormData);
 
   const handleEdit = (product) => {
     setEditingId(product.id);
@@ -449,6 +518,16 @@ function DressesManager() {
       category: catName,
       image: "",
       description: "",
+      fabric: "",
+      color: "",
+      occasion: "",
+      images: [],
+      blouseDetails: "",
+      weave: "",
+      washCare: "",
+      deliveryEstimate: "48 hours",
+      deliveryInfo: "",
+      returnPolicy: "",
       isNew: false,
       isFeatured: false,
       stock: 10
@@ -491,9 +570,9 @@ function DressesManager() {
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Price (₹)</label><input type="number" className="w-full border p-2 rounded" value={formData.price} onChange={e => setFormData({ ...formData, price: Number(e.target.value) })} /></div>
             <div><label className="block text-xs font-bold text-gray-600 mb-1">Category</label><select className="w-full border p-2 rounded" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>{dressCategoryNames.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
             <div>
-              <label className="block text-xs font-bold text-gray-600 mb-1">Image URL or Upload File</label>
-              <div className="flex gap-2">
-                <input type="text" className="flex-1 border p-2 rounded min-w-0" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} placeholder="https://..." />
+              <label className="block text-xs font-bold text-gray-600 mb-1">Main Dress Image</label>
+              <div className="flex items-center gap-3">
+                {formData.image && <img src={formData.image} alt="" className="h-16 w-16 rounded object-cover border" />}
                 <label className={`bg-primary text-white rounded px-4 py-2 flex items-center justify-center gap-2 relative transition flex-shrink-0 text-sm font-medium ${isUploadingImage ? "opacity-70 cursor-wait" : "cursor-pointer hover:bg-primary/90"}`}>
                   {isUploadingImage && <LoaderCircle size={16} className="animate-spin" />}
                   {isUploadingImage ? "Uploading..." : "Upload"}
@@ -501,7 +580,32 @@ function DressesManager() {
                 </label>
               </div>
             </div>
-            <div><label className="block text-xs font-bold text-gray-600 mb-1">Stock Quantity</label><input type="number" className="w-full border p-2 rounded" value={formData.stock || 0} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Availability</label><select className="w-full border p-2 rounded" value={(formData.stock || 0) > 0 ? "available" : "unavailable"} onChange={e => setFormData({ ...formData, stock: e.target.value === "available" ? 10 : 0 })}><option value="available">In stock</option><option value="unavailable">Out of stock</option></select></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Fabric</label><select className="w-full border p-2 rounded" value={Array.isArray(formData.fabric) ? formData.fabric[0] : (formData.fabric || "")} onChange={e => setFormData({ ...formData, fabric: e.target.value })}><option value="">Select fabric</option>{FABRIC_OPTIONS.map(value => <option key={value} value={value}>{value}</option>)}</select></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Color</label><select className="w-full border p-2 rounded" value={Array.isArray(formData.color) ? formData.color[0] : (formData.color || "")} onChange={e => setFormData({ ...formData, color: e.target.value })}><option value="">Select color</option>{COLOR_OPTIONS.map(value => <option key={value} value={value}>{value}</option>)}</select></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Occasion</label><select className="w-full border p-2 rounded" value={Array.isArray(formData.occasion) ? formData.occasion[0] : (formData.occasion || "")} onChange={e => setFormData({ ...formData, occasion: e.target.value })}><option value="">Select occasion</option>{OCCASION_OPTIONS.map(value => <option key={value} value={value}>{value}</option>)}</select></div>
+            <div className="col-span-2">
+              <label className="block text-xs font-bold text-gray-600 mb-2">Additional Dress Images</label>
+              <div className="flex flex-wrap gap-3">
+                {(formData.images || []).map((url, index) => (
+                  <div key={`${url}-${index}`} className="relative h-20 w-20">
+                    <img src={url} alt={`Gallery ${index + 1}`} className="h-full w-full rounded object-cover border" />
+                    <button type="button" onClick={() => setFormData(current => ({ ...current, images: current.images.filter((_, imageIndex) => imageIndex !== index) }))} className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[11px] text-white" aria-label="Remove gallery image">×</button>
+                  </div>
+                ))}
+                <label className={`flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded border border-dashed border-gray-400 text-xs text-gray-600 ${isUploadingGallery ? "opacity-70" : "hover:border-primary hover:text-primary"}`}>
+                  {isUploadingGallery ? <LoaderCircle size={18} className="animate-spin" /> : <Plus size={18} />}
+                  <span className="mt-1">{isUploadingGallery ? "Uploading" : "Add images"}</span>
+                  <input type="file" accept="image/*" multiple disabled={isUploadingGallery} className="hidden" onChange={handleGalleryUpload} />
+                </label>
+              </div>
+            </div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Blouse Details</label><input type="text" className="w-full border p-2 rounded" value={formData.blouseDetails || ""} onChange={e => setFormData({ ...formData, blouseDetails: e.target.value })} placeholder="Included blouse piece, running blouse..." /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Weave</label><input type="text" className="w-full border p-2 rounded" value={formData.weave || ""} onChange={e => setFormData({ ...formData, weave: e.target.value })} placeholder="Handloom, machine woven..." /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Wash Care</label><input type="text" className="w-full border p-2 rounded" value={formData.washCare || ""} onChange={e => setFormData({ ...formData, washCare: e.target.value })} placeholder="Dry clean only" /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Delivery Estimate</label><input type="text" className="w-full border p-2 rounded" value={formData.deliveryEstimate || ""} onChange={e => setFormData({ ...formData, deliveryEstimate: e.target.value })} placeholder="2–5 business days" /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Delivery Information</label><input type="text" className="w-full border p-2 rounded" value={formData.deliveryInfo || ""} onChange={e => setFormData({ ...formData, deliveryInfo: e.target.value })} placeholder="Free delivery within Hyderabad" /></div>
+            <div><label className="block text-xs font-bold text-gray-600 mb-1">Return / Exchange Policy</label><input type="text" className="w-full border p-2 rounded" value={formData.returnPolicy || ""} onChange={e => setFormData({ ...formData, returnPolicy: e.target.value })} placeholder="Exchange within 7 days" /></div>
             <div className="flex items-center gap-4 mt-6">
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={formData.isNew} onChange={e => setFormData({ ...formData, isNew: e.target.checked })} /> New Arrival</label>
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={formData.isFeatured} onChange={e => setFormData({ ...formData, isFeatured: e.target.checked })} /> Featured Masterpiece</label>

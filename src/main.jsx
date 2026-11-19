@@ -21,6 +21,7 @@ import { CartProvider } from "./context/CartContext";
 import { AdminProvider } from "./context/AdminContext";
 import { Toaster } from "@/components/ui/sonner";
 import AdminDashboard from "./pages/AdminDashboard";
+import Checkout from "./pages/Checkout";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -41,6 +42,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             <Route path="/specials" element={<Specials />} />
             <Route path="/dresses" element={<Dresses />} />
             <Route path="/dresses/:category" element={<DressCategory />} />
+            <Route path="/checkout" element={<Checkout />} />
             <Route path="*" element={<NotFound />} />
           </Route>
           {/* Admin Route (No Layout) */}

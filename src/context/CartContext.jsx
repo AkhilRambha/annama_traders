@@ -1,19 +1,25 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { toast } from "sonner";
-
+import { useAdmin } from "@/context/AdminContext";
 const CartContext = createContext();
 
 export function CartProvider({ children }) {
+  const { products } = useAdmin();
   const [cart, setCart] = useState(() => {
-    // Load from local storage on initial render
-    if (typeof window !== "undefined") {
+    if (typeof window === "undefined") return [];
+    try {
       const saved = localStorage.getItem("saree_cart");
-      if (saved) return JSON.parse(saved);
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      localStorage.removeItem("saree_cart");
     }
     return [];
   });
   
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [checkoutItems, setCheckoutItems] = useState([]);
+  const [checkoutMode, setCheckoutMode] = useState("cart");
 
   useEffect(() => {
     // Persist cart to local storage
@@ -22,32 +28,31 @@ export function CartProvider({ children }) {
     }
   }, [cart]);
 
-  const addToCart = (product, { showToast = true, openCart = true } = {}) => {
-    let isExisting = false;
-    
+  useEffect(() => {
+    if (!Array.isArray(products) || !products.length) return;
+    setCart(current =>
+      current.map(item => {
+        const liveProduct = products.find(product => product.id === item.id);
+        return liveProduct
+          ? { ...liveProduct, quantity: Number(item.quantity) > 0 ? Number(item.quantity) : 1 }
+          : item;
+      })
+    );
+  }, [products]);
+
+  const addToCart = (product, { openCart = true, quantity = 1 } = {}) => {
+    const safeQuantity = Math.max(1, Number(quantity) || 1);
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
-        isExisting = true;
         return prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.id === product.id
+            ? { ...item, ...product, quantity: item.quantity + safeQuantity }
+            : item
         );
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, { ...product, quantity: safeQuantity }];
     });
-    
-    if (showToast) {
-      // Need a small timeout to ensure state setter finishes before we evaluate isExisting,
-      // actually since setCart is synchronous in terms of the function closure, we can just check if product is in cart state.
-      // Wait, isExisting is modified inside the pure function which might be double invoked, but since it's just a boolean it's fine.
-      // A better way is to just check the current state `cart` before calling setCart.
-      const existing = cart.find((item) => item.id === product.id);
-      if (existing) {
-        toast.success(`Increased quantity of ${product.name} in cart`);
-      } else {
-        toast.success(`Added ${product.name} to cart`);
-      }
-    }
     
     if (openCart) {
       setIsCartOpen(true);
@@ -72,6 +77,16 @@ export function CartProvider({ children }) {
 
   const clearCart = () => setCart([]);
 
+  const beginCheckout = (items, mode = "cart") => {
+    setCheckoutItems(Array.isArray(items) ? items.map(item => ({ ...item })) : []);
+    setCheckoutMode(mode);
+  };
+
+  const clearCheckout = () => {
+    setCheckoutItems([]);
+    setCheckoutMode("cart");
+  };
+
   const getCartTotal = () => {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0);
   };
@@ -90,6 +105,10 @@ export function CartProvider({ children }) {
         removeFromCart,
         updateQuantity,
         clearCart,
+        checkoutItems,
+        checkoutMode,
+        beginCheckout,
+        clearCheckout,
         getCartTotal,
         getCartCount,
       }}

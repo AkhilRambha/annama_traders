@@ -1,10 +1,41 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Filter, ArrowRight } from "lucide-react";
+import { Filter, ArrowRight, Search, SlidersHorizontal, X } from "lucide-react";
 import { ProductCard } from "@/components/ecommerce/ProductCard";
 import { useAdmin } from "@/context/AdminContext";
 import { DRESS_CATEGORY_CARDS } from "@/data/dressProducts";
+import { COLOR_OPTIONS, FABRIC_OPTIONS, OCCASION_OPTIONS, PRICE_OPTIONS } from "@/data/searchOptions";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+
+const getAttributeValues = (product, key) => {
+  const value = product[key];
+  if (Array.isArray(value)) return value.filter(item => typeof item === "string");
+  return typeof value === "string" ? value.split(",").map(item => item.trim()).filter(Boolean) : [];
+};
+
+const getProductSearchText = (product) => [
+  product.name,
+  product.category,
+  product.description,
+  product.id,
+  ...["fabric", "color", "occasion"].flatMap(key => getAttributeValues(product, key))
+].filter(value => typeof value === "string").join(" ").toLowerCase();
+
+const getAttributeSearchText = (product, key) => {
+  const values = getAttributeValues(product, key);
+  return values.join(" ").toLowerCase();
+};
+
+const getAttributeOptions = (products, key) => [...new Set(
+  products.flatMap(product => getAttributeValues(product, key).map(value => value.trim()).filter(Boolean))
+)].sort((a, b) => a.localeCompare(b));
 
 function CollectionsPage() {
   const { products: PRODUCTS, categories: CATEGORIES } = useAdmin();
@@ -13,6 +44,7 @@ function CollectionsPage() {
   const searchQuery = searchParams.get("q") || "";
   
   const [activeCategory, setActiveCategory] = useState(initialCategory);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
     const category = searchParams.get("category");
@@ -35,14 +67,41 @@ function CollectionsPage() {
       currentParams.set("category", category);
     }
     
-    setSearchParams(currentParams);
+    setSearchParams(currentParams, { replace: true });
   };
 
-  const clearSearch = () => {
+  const updateSearchParam = (key, value) => {
     const currentParams = new URLSearchParams(searchParams);
-    currentParams.delete("q");
-    setSearchParams(currentParams);
+    if (value) currentParams.set(key, value);
+    else currentParams.delete(key);
+    setSearchParams(currentParams, { replace: true });
   };
+
+  const attributeOptions = useMemo(() => ({
+    fabric: [...new Set([...FABRIC_OPTIONS, ...getAttributeOptions(PRODUCTS, "fabric")])].sort((a, b) => a.localeCompare(b)),
+    color: [...new Set([...COLOR_OPTIONS, ...getAttributeOptions(PRODUCTS, "color")])].sort((a, b) => a.localeCompare(b)),
+    occasion: [...new Set([...OCCASION_OPTIONS, ...getAttributeOptions(PRODUCTS, "occasion")])].sort((a, b) => a.localeCompare(b)),
+  }), [PRODUCTS]);
+
+  const categoryOptions = useMemo(() => {
+    const liveCategories = CATEGORIES.map(category =>
+      typeof category === "string" ? category : (category?.name || category?.id || "")
+    ).filter(Boolean);
+    return [...new Set([
+      ...liveCategories,
+      ...DRESS_CATEGORY_CARDS.map(category => category.name),
+    ])];
+  }, [CATEGORIES]);
+
+  const searchSuggestions = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return [];
+    return PRODUCTS
+      .filter(product => getProductSearchText(product).includes(query))
+      .map(product => product.name)
+      .filter((name, index, names) => name && names.indexOf(name) === index)
+      .slice(0, 8);
+  }, [PRODUCTS, searchQuery]);
 
   const filteredProducts = useMemo(() => {
     let result = PRODUCTS; // AdminContext already includes ALL_DRESS_PRODUCTS
@@ -51,18 +110,153 @@ function CollectionsPage() {
       result = result.filter(p => p.category === activeCategory);
     }
     
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(p =>
-        p.name.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
-        (p.description || "").toLowerCase().includes(q) ||
-        (p.id || "").toLowerCase().includes(q)
+    const query = searchQuery.trim().toLowerCase();
+    if (query) result = result.filter(product => getProductSearchText(product).includes(query));
+
+    for (const key of ["fabric", "color", "occasion"]) {
+      const value = (searchParams.get(key) || "").trim().toLowerCase();
+      if (value) result = result.filter(product => getAttributeSearchText(product, key).includes(value));
+    }
+
+    const minPrice = Number(searchParams.get("minPrice"));
+    const maxPrice = Number(searchParams.get("maxPrice"));
+    if (searchParams.has("minPrice") && Number.isFinite(minPrice)) {
+      result = result.filter(product => Number(product.price) >= minPrice);
+    }
+    if (searchParams.has("maxPrice") && Number.isFinite(maxPrice)) {
+      result = result.filter(product => Number(product.price) <= maxPrice);
+    }
+
+    const availability = searchParams.get("availability");
+    if (availability === "available") {
+      result = result.filter(product =>
+        product.availability !== false &&
+        product.isAvailable !== false &&
+        (product.stock == null || Number(product.stock) > 0)
+      );
+    } else if (availability === "unavailable") {
+      result = result.filter(product =>
+        product.availability === false ||
+        product.isAvailable === false ||
+        (product.stock != null && Number(product.stock) <= 0)
       );
     }
-    
+
+    result = [...result];
+    const sort = searchParams.get("sort") || "featured";
+    if (sort === "featured") result.sort((a, b) => Number(Boolean(b.isFeatured || b.featured)) - Number(Boolean(a.isFeatured || a.featured)));
+    if (sort === "price-low") result.sort((a, b) => Number(a.price) - Number(b.price));
+    if (sort === "price-high") result.sort((a, b) => Number(b.price) - Number(a.price));
+    if (sort === "name") result.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    if (sort === "newest") result.sort((a, b) => Number(Boolean(b.isNew)) - Number(Boolean(a.isNew)));
+
     return result;
-  }, [PRODUCTS, activeCategory, searchQuery]);
+  }, [PRODUCTS, activeCategory, searchQuery, searchParams]);
+
+  const clearFilters = () => {
+    const currentParams = new URLSearchParams(searchParams);
+    ["fabric", "color", "occasion", "minPrice", "maxPrice", "availability", "sort"].forEach(key => currentParams.delete(key));
+    currentParams.delete("category");
+    setActiveCategory("All");
+    setSearchParams(currentParams, { replace: true });
+  };
+
+  const hasAdvancedFilters = ["category", "fabric", "color", "occasion", "minPrice", "maxPrice", "availability", "sort"]
+    .some(key => searchParams.has(key));
+
+  const FilterControls = () => (
+    <div className="space-y-6">
+      <div className="border-b border-border pb-5">
+        <label htmlFor="filter-category" className="mb-3 block text-xs font-bold uppercase tracking-[0.18em] text-primary">
+          Category
+        </label>
+        <select
+          id="filter-category"
+          value={activeCategory}
+          onChange={event => handleCategoryChange(event.target.value)}
+          className="w-full rounded-sm border border-gold bg-background px-3 py-3 text-sm text-foreground outline-none focus:border-gold"
+        >
+          <option value="All">All categories</option>
+          {categoryOptions.map(category => (
+            <option key={category} value={category}>{category}</option>
+          ))}
+        </select>
+      </div>
+
+      {["fabric", "color", "occasion"].map(key => (
+        <div key={key} className="border-b border-border pb-5">
+          <label htmlFor={`filter-${key}`} className="mb-3 block text-xs font-bold uppercase tracking-[0.18em] text-primary">
+            {key}
+          </label>
+          <select
+            id={`filter-${key}`}
+            value={searchParams.get(key) || ""}
+            onChange={event => updateSearchParam(key, event.target.value)}
+            className="w-full rounded-sm border border-input bg-background px-3 py-3 text-sm text-foreground outline-none focus:border-gold"
+          >
+            <option value="">All {key}s</option>
+            {attributeOptions[key].map(value => <option key={value} value={value}>{value}</option>)}
+          </select>
+        </div>
+      ))}
+
+      <div className="border-b border-border pb-5">
+        <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-primary">Price range</p>
+        <select
+          value={(() => {
+            const min = searchParams.get("minPrice") || "";
+            const max = searchParams.get("maxPrice") || "";
+            return PRICE_OPTIONS.find(option =>
+              String(option.min) === min &&
+              (option.max == null ? max === "" : String(option.max) === max)
+            )?.value || "";
+          })()}
+          onChange={event => {
+            const option = PRICE_OPTIONS.find(item => item.value === event.target.value);
+            const currentParams = new URLSearchParams(searchParams);
+            if (option) {
+              currentParams.set("minPrice", String(option.min));
+              if (option.max == null) currentParams.delete("maxPrice");
+              else currentParams.set("maxPrice", String(option.max));
+            } else {
+              currentParams.delete("minPrice");
+              currentParams.delete("maxPrice");
+            }
+            setSearchParams(currentParams, { replace: true });
+          }}
+          aria-label="Price range"
+          className="w-full rounded-sm border border-input bg-background px-3 py-3 text-sm outline-none focus:border-gold"
+        >
+          <option value="">All prices</option>
+          {PRICE_OPTIONS.map(option => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="border-b border-border pb-5">
+        <label htmlFor="availability-filter" className="mb-3 block text-xs font-bold uppercase tracking-[0.18em] text-primary">
+          Availability
+        </label>
+        <select
+          id="availability-filter"
+          value={searchParams.get("availability") || ""}
+          onChange={event => updateSearchParam("availability", event.target.value)}
+          className="w-full rounded-sm border border-input bg-background px-3 py-3 text-sm outline-none focus:border-gold"
+        >
+          <option value="">All items</option>
+          <option value="available">In stock</option>
+          <option value="unavailable">Out of stock</option>
+        </select>
+      </div>
+
+      {hasAdvancedFilters && (
+        <button type="button" onClick={clearFilters} className="text-xs uppercase tracking-widest text-gold-deep hover:text-primary">
+          Clear all filters
+        </button>
+      )}
+    </div>
+  );
 
   return (
     <div className="min-h-screen pt-36 pb-24 px-6 lg:px-10 max-w-screen-2xl mx-auto flex flex-col">
@@ -76,109 +270,132 @@ function CollectionsPage() {
         </p>
       </div>
 
-      {/* Top Filter Bar */}
-      <div className="sticky top-[110px] z-30 bg-background/90 backdrop-blur-md py-4 mb-10 border-b border-border overflow-x-auto hide-scrollbar">
-        <div className="flex items-center gap-3 w-max mx-auto px-4">
-          <button
-            onClick={() => handleCategoryChange("All")}
-            className={`px-6 py-2.5 rounded-full text-xs uppercase tracking-widest transition whitespace-nowrap ${
-              activeCategory === "All" 
-                ? "bg-primary text-primary-foreground shadow-md" 
-                : "bg-accent/10 text-muted-foreground hover:bg-accent/20 hover:text-primary"
-            }`}
-          >
-            All Items
-          </button>
-          
-          {CATEGORIES.map(category => (
-            <button
-              key={category}
-              onClick={() => handleCategoryChange(category)}
-              className={`px-6 py-2.5 rounded-full text-xs uppercase tracking-widest transition whitespace-nowrap ${
-                activeCategory === category 
-                  ? "bg-primary text-primary-foreground shadow-md" 
-                  : "bg-accent/10 text-muted-foreground hover:bg-accent/20 hover:text-primary"
-              }`}
-            >
-              {category}
+      <section className="mb-8" aria-label="Smart search">
+        <div className="mx-auto flex max-w-3xl items-center gap-3 rounded-full border border-border bg-background px-5 py-3 shadow-sm transition focus-within:border-gold focus-within:ring-2 focus-within:ring-gold/10">
+          <Search size={20} className="shrink-0 text-gold-deep" aria-hidden="true" />
+          <input
+            id="collection-search"
+            type="search"
+            value={searchQuery}
+            onChange={event => updateSearchParam("q", event.target.value)}
+            placeholder="Search by name, fabric, color, occasion..."
+            list="collection-product-suggestions"
+            autoComplete="off"
+            className="w-full bg-transparent py-1 text-base outline-none placeholder:text-muted-foreground/70"
+          />
+          <datalist id="collection-product-suggestions">
+            {searchSuggestions.map(name => <option key={name} value={name} />)}
+          </datalist>
+          {searchQuery && (
+            <button type="button" onClick={() => updateSearchParam("q", "")} className="rounded-full p-1 text-muted-foreground hover:text-primary" aria-label="Clear search">
+              <X size={16} />
             </button>
-          ))}
-
-          <div className="w-px h-6 bg-border/50 mx-2 hidden md:block" />
-
-          {DRESS_CATEGORY_CARDS.map(cat => (
-            <button
-              key={cat.name}
-              onClick={() => handleCategoryChange(cat.name)}
-              className={`px-6 py-2.5 rounded-full text-xs uppercase tracking-widest transition whitespace-nowrap ${
-                activeCategory === cat.name 
-                  ? "bg-primary text-primary-foreground shadow-md" 
-                  : "bg-accent/10 text-muted-foreground hover:bg-accent/20 hover:text-primary"
-              }`}
-            >
-              {cat.name}
-            </button>
-          ))}
+          )}
         </div>
-      </div>
+      </section>
 
-      {/* Results Count */}
-      <div className="flex items-center justify-between mb-8">
-        <p className="text-muted-foreground text-sm uppercase tracking-wider">
-          Showing <span className="font-bold text-primary">{filteredProducts.length}</span> results
-        </p>
-      </div>
+      <div className="grid items-start gap-8 lg:grid-cols-[240px_minmax(0,1fr)]">
+        <aside className="sticky top-[180px] hidden max-h-[calc(100vh-210px)] overflow-y-auto rounded-sm border border-border bg-background p-5 lg:block">
+          <div className="mb-5 flex items-center justify-between border-b border-border pb-4">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal size={17} className="text-gold-deep" />
+              <h2 className="text-sm font-bold uppercase tracking-[0.18em] text-primary">Filters</h2>
+            </div>
+            {hasAdvancedFilters && (
+              <button type="button" onClick={clearFilters} className="text-[11px] uppercase tracking-wider text-gold-deep hover:text-primary">
+                Reset
+              </button>
+            )}
+          </div>
+          <FilterControls />
+        </aside>
 
-      {/* Main Product Grid */}
-      <main>
-        {filteredProducts.length > 0 ? (
-          <motion.div 
-            layout
-            className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-8"
-          >
-            <AnimatePresence>
-              {filteredProducts.map((product, index) => (
-                <motion.div
-                  key={product.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.4 }}
-                >
-                  <ProductCard product={product} index={index} />
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </motion.div>
-        ) : (
-          <div className="py-32 text-center flex flex-col items-center justify-center bg-accent/5 rounded-sm border border-border">
-            <Filter size={48} className="text-gold mb-4 opacity-50" />
-            <h3 className="font-serif text-2xl text-primary mb-2">No products found</h3>
-            <p className="text-muted-foreground mb-6">
-              We couldn't find any products matching your search criteria.
+        <main className="min-w-0">
+          <div className="mb-6 flex items-center justify-between gap-3">
+            <p className="text-sm uppercase tracking-wider text-muted-foreground">
+              <span className="font-bold text-primary">{filteredProducts.length}</span> products
             </p>
-            <div className="flex gap-4">
-              {searchQuery && (
-                <button 
-                  onClick={clearSearch}
-                  className="px-8 py-3 bg-gold text-white hover:bg-gold-deep transition rounded-full uppercase text-xs tracking-widest shadow-md"
-                >
-                  Clear Search
-                </button>
-              )}
-              {activeCategory !== "All" && (
-                <button 
-                  onClick={() => handleCategoryChange("All")}
-                  className="px-8 py-3 border border-gold text-gold-deep hover:bg-gold hover:text-white transition rounded-full uppercase text-xs tracking-widest shadow-md"
-                >
-                  Clear Filters
-                </button>
-              )}
+            <div className="flex items-center gap-2">
+              <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+                <SheetTrigger asChild>
+                  <button type="button" className="flex items-center gap-2 rounded-sm border border-border bg-background px-3 py-2 text-xs font-bold uppercase tracking-wider text-primary lg:hidden">
+                    <SlidersHorizontal size={15} />
+                    Filters
+                    {hasAdvancedFilters && <span className="h-2 w-2 rounded-full bg-gold" />}
+                  </button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[min(88vw,340px)] overflow-y-auto p-5">
+                  <SheetHeader className="mb-6 border-b border-border pb-4 pr-8 text-left">
+                    <SheetTitle className="flex items-center gap-2 text-primary">
+                      <SlidersHorizontal size={17} /> Filters
+                    </SheetTitle>
+                  </SheetHeader>
+                  <FilterControls />
+                </SheetContent>
+              </Sheet>
+
+              <label htmlFor="collection-sort" className="sr-only">Sort products</label>
+              <select
+                id="collection-sort"
+                value={searchParams.get("sort") || "featured"}
+                onChange={event => updateSearchParam("sort", event.target.value)}
+                className="rounded-sm border border-border bg-background px-3 py-2 text-xs font-medium text-foreground outline-none focus:border-gold"
+              >
+                <option value="featured">Featured</option>
+                <option value="newest">Newest</option>
+                <option value="price-low">Price: Low to high</option>
+                <option value="price-high">Price: High to low</option>
+                <option value="name">Name: A to Z</option>
+              </select>
             </div>
           </div>
-        )}
-      </main>
+
+          {filteredProducts.length > 0 ? (
+            <motion.div
+              layout
+              className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 md:gap-6"
+            >
+              <AnimatePresence>
+                {filteredProducts.map((product, index) => (
+                  <motion.div
+                    key={product.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.4 }}
+                  >
+                    <ProductCard product={product} index={index} />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          ) : (
+            <div className="py-32 text-center flex flex-col items-center justify-center bg-accent/5 rounded-sm border border-border">
+              <Filter size={48} className="text-gold mb-4 opacity-50" />
+              <h3 className="font-serif text-2xl text-primary mb-2">No products found</h3>
+              <p className="text-muted-foreground mb-6">
+                We couldn't find any products matching your search criteria.
+              </p>
+              <div className="flex flex-wrap justify-center gap-4">
+                {searchQuery && (
+                  <button
+                    onClick={() => updateSearchParam("q", "")}
+                    className="px-8 py-3 bg-gold text-white hover:bg-gold-deep transition rounded-full uppercase text-xs tracking-widest shadow-md"
+                  >
+                    Clear Search
+                  </button>
+                )}
+                {hasAdvancedFilters && (
+                  <button onClick={clearFilters} className="px-8 py-3 border border-gold text-gold-deep hover:bg-gold hover:text-white transition rounded-full uppercase text-xs tracking-widest shadow-md">
+                    Clear Filters
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
 
       {/* ── Dresses Quick Links ─────────────────────────────── */}
       {/* ── DRESSES COLLECTION ─────────────────────────────── */}

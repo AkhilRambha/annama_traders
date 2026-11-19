@@ -11,6 +11,7 @@ function ContactPage() {
 
   const sendToWhatsApp = (e) => {
     e.preventDefault();
+    const whatsappNumber = String(contactInfo?.phone || "917093010264").replace(/\D/g, "");
     const text =
       `*Private Concierge Request*%0A%0A` +
       `Name: ${form.name}%0A` +
@@ -18,7 +19,7 @@ function ContactPage() {
       `Phone: ${form.phone}%0A` +
       `Occasion: ${form.occasion}%0A` +
       `Message: ${form.message}`;
-    window.open(`https://wa.me/917093010264?text=${text}`, "_blank");
+    window.open(`https://wa.me/${whatsappNumber}?text=${text}`, "_blank");
   };
 
   const update = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
