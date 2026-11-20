@@ -4,12 +4,12 @@ import { formatPrice } from "@/data/products";
 import { useAdmin } from "@/context/AdminContext";
 import { useCart } from "@/context/CartContext";
 import { DRESS_CATEGORIES_META } from "@/data/dressProducts";
-import { ShoppingBag, Truck, Heart, ChevronDown, ChevronUp, ChevronRight, Star, ArrowRight, ZoomIn, Minus, Plus, Gem, Sparkles, Gift, LockKeyhole, BadgeCheck, RotateCcw, Headphones } from "lucide-react";
+import { ShoppingBag, Truck, Heart, ChevronDown, ChevronUp, ChevronRight, Star, ArrowRight, ZoomIn, Minus, Plus, Gem, Sparkles, Gift, LockKeyhole, BadgeCheck, RotateCcw, Headphones, LoaderCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProductCard } from "@/components/ecommerce/ProductCard";
 
 function ProductDetailsPage() {
-  const { products: PRODUCTS } = useAdmin();
+  const { products: PRODUCTS, productsLoaded, productsLoadError } = useAdmin();
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart, beginCheckout } = useCart();
@@ -36,6 +36,8 @@ function ProductDetailsPage() {
 
 
   useEffect(() => {
+    if (!productsLoaded || productsLoadError) return;
+
     const found = PRODUCTS.find((p) => p.id === id);
     if (found) {
       setProduct(found);
@@ -53,10 +55,29 @@ function ProductDetailsPage() {
         setRelatedProducts(related);
       }
     } else {
-      navigate("/collections");
+      navigate("/collections", { replace: true });
     }
-    window.scrollTo(0, 0);
-  }, [id, navigate, PRODUCTS]);
+  }, [id, navigate, PRODUCTS, productsLoaded, productsLoadError]);
+
+  if (!productsLoaded) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center gap-3 text-muted-foreground" role="status" aria-live="polite">
+        <LoaderCircle size={20} className="animate-spin" />
+        Loading product details...
+      </div>
+    );
+  }
+
+  if (productsLoadError) {
+    return (
+      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 px-6 text-center" role="alert">
+        <p className="text-muted-foreground">Product details could not be loaded. Please try again later.</p>
+        <Link to="/collections" className="rounded-sm bg-primary px-6 py-3 text-sm font-medium text-primary-foreground">
+          Browse collections
+        </Link>
+      </div>
+    );
+  }
 
   if (!product) return null;
 

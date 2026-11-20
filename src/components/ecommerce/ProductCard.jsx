@@ -14,32 +14,33 @@ export function ProductCard({ product, index, bgColor }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.6, delay: (index % 4) * 0.1 }}
-      className={`group relative flex flex-col ${bgColor || "bg-background"} overflow-hidden rounded-sm border border-border shadow-sm transition duration-500 hover:shadow-luxe`}
+      className={`group relative flex touch-pan-y flex-col ${bgColor || "bg-background"} overflow-hidden rounded-sm border border-border shadow-sm transition duration-500 hover:shadow-luxe`}
     >
       <div className="relative aspect-square overflow-hidden bg-accent/10">
-        <img src={product.image} alt={product.name} className="h-full w-full object-cover transition duration-700 ease-in-out group-hover:scale-105" loading="lazy" />
+        <img src={product.image} alt={product.name} className="h-full w-full object-cover transition duration-700 ease-in-out group-hover:scale-105" loading="lazy" decoding="async" />
 
         <div className="absolute left-3 top-3 flex flex-col gap-2">
           {product.isNew && <span className="rounded-sm bg-gold px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-white shadow-sm">New</span>}
           {product.isFeatured && <span className="rounded-sm bg-primary px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-white shadow-sm">Featured</span>}
         </div>
 
-        <div className="absolute inset-0 flex items-center justify-center gap-3 bg-primary/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+        <div className="invisible pointer-events-none absolute inset-0 z-20 hidden items-center justify-center gap-3 bg-primary/20 opacity-0 transition-opacity duration-300 sm:flex sm:group-hover:visible sm:group-hover:opacity-100 sm:group-focus-within:visible sm:group-focus-within:opacity-100">
           <button
             type="button"
             onClick={() => {
               beginCheckout([{ ...product, quantity: 1 }], "buy");
               navigate("/checkout");
             }}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-primary shadow-lg transition hover:scale-110 hover:bg-gold hover:text-white"
+            className="pointer-events-auto flex h-12 w-12 touch-manipulation items-center justify-center rounded-full bg-white text-primary shadow-lg transition hover:scale-110 hover:bg-gold hover:text-white"
             title="Buy Now"
+            aria-label={`Buy ${product.name} now`}
           >
             <CreditCard size={20} />
           </button>
-          <button type="button" onClick={() => addToCart(product)} className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-primary shadow-lg transition hover:scale-110 hover:bg-gold hover:text-white" title="Add to Cart">
+          <button type="button" onClick={() => addToCart(product)} className="pointer-events-auto flex h-12 w-12 touch-manipulation items-center justify-center rounded-full bg-white text-primary shadow-lg transition hover:scale-110 hover:bg-gold hover:text-white" title="Add to Cart" aria-label={`Add ${product.name} to cart`}>
             <ShoppingBag size={20} />
           </button>
-          <Link to={`/product/${product.id}`} className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-primary shadow-lg transition hover:scale-110 hover:bg-gold hover:text-white" title="Quick View">
+          <Link to={`/product/${product.id}`} className="pointer-events-auto flex h-12 w-12 touch-manipulation items-center justify-center rounded-full bg-white text-primary shadow-lg transition hover:scale-110 hover:bg-gold hover:text-white" title="Quick View" aria-label={`View ${product.name}`}>
             <Eye size={20} />
           </Link>
         </div>
@@ -57,6 +58,11 @@ export function ProductCard({ product, index, bgColor }) {
           </div>
         </div>
       </div>
+      <Link
+        to={`/product/${product.id}`}
+        aria-label={`View ${product.name}`}
+        className="absolute inset-0 z-10 touch-manipulation rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      />
     </motion.div>
   );
 }

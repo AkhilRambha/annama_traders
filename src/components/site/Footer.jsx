@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Instagram, Phone, Mail, MapPin, ArrowRight, Facebook, Twitter, Lock } from "lucide-react";
+import { Instagram, Phone, Mail, MapPin, ArrowRight, Facebook, Twitter } from "lucide-react";
 import { useAdmin } from "@/context/AdminContext";
 import logo from "@/assets/logo.png";
 
@@ -88,10 +88,6 @@ export function Footer() {
               <Link to="/privacy" className="hover:text-gold transition-colors">Privacy Policy</Link>
               <span className="opacity-30">|</span>
               <Link to="/terms" className="hover:text-gold transition-colors">Terms & Conditions</Link>
-              <span className="opacity-30">|</span>
-              <Link to="/admin" className="hover:text-gold transition-colors flex items-center gap-1">
-                <Lock size={10} /> Admin
-              </Link>
             </div>
           </div>
           <div className="text-gold font-script italic text-lg lg:text-xl">

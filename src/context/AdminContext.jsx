@@ -120,6 +120,8 @@ const AdminContext = createContext();
 export function AdminProvider({ children }) {
   // --- STATE INITIALIZATION (Defaults while loading) ---
   const [products, setProducts] = useState([]);
+  const [productsLoaded, setProductsLoaded] = useState(false);
+  const [productsLoadError, setProductsLoadError] = useState(null);
   const [categories, setCategories] = useState([...new Set(CATEGORIES)]);
   const [heroImages, setHeroImages] = useState(defaultHeroImages);
   const [reviews, setReviews] = useState(defaultReviews);
@@ -145,9 +147,16 @@ export function AdminProvider({ children }) {
   useEffect(() => {
     // Listen to Products
     const unsubProducts = onSnapshot(collection(db, "products"), (snap) => {
-      setProducts(snap.docs.map(productDoc => ({ id: productDoc.id, ...productDoc.data() })));
+      const loadedProducts = snap.docs.map(productDoc => ({ id: productDoc.id, ...productDoc.data() }));
+      setProducts(loadedProducts);
+      setProductsLoadError(null);
+      if (loadedProducts.length > 0 || !snap.metadata.fromCache) {
+        setProductsLoaded(true);
+      }
     }, (error) => {
       console.error("Failed to load products from Firestore:", error);
+      setProductsLoadError(error instanceof Error ? error.message : "Product data could not be loaded.");
+      setProductsLoaded(true);
     });
 
     // Listen to Reviews
@@ -344,7 +353,7 @@ export function AdminProvider({ children }) {
 
   return (
     <AdminContext.Provider value={{
-      products, addProduct, updateProduct, deleteProduct,
+      products, productsLoaded, productsLoadError, addProduct, updateProduct, deleteProduct,
       categories, addCategory, updateCategory, deleteCategory,
       heroImages, updateHeroSection,
       reviews, addReview, updateReview, deleteReview,
