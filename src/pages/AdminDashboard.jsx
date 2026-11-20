@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { LayoutDashboard, Package, Image as ImageIcon, List, MessageSquare, Settings, LogOut, Plus, Edit2, Trash2, Save, ShieldCheck, Lock, FileText, Tag, Star, Shirt, LoaderCircle, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useAdmin } from "@/context/AdminContext";
 import { ALL_DRESS_PRODUCTS, dressCategoryNames } from "@/data/dressProducts";
 import { PRODUCTS as DEFAULT_PRODUCTS } from "@/data/products";
 import { COLOR_OPTIONS, FABRIC_OPTIONS, OCCASION_OPTIONS } from "@/data/searchOptions";
+
+const customerSiteUrl = import.meta.env.VITE_CUSTOMER_SITE_URL || "/";
 
 const runAdminAction = async (successMessage, operation) => {
   try {
@@ -132,12 +134,12 @@ export default function AdminDashboard() {
           })}
         </nav>
         <div className="p-4 border-t border-gray-200">
-          <Link
-            to="/"
+          <a
+            href={customerSiteUrl}
             className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-md transition-colors"
           >
             <LogOut size={18} /> Exit to Store
-          </Link>
+          </a>
         </div>
       </aside>
 
@@ -230,9 +232,9 @@ function AdminLogin() {
           </button>
         </form>
         <div className="mt-8">
-          <Link to="/" className="text-sm text-gray-500 hover:text-gray-900 flex items-center justify-center gap-2">
+          <a href={customerSiteUrl} className="text-sm text-gray-500 hover:text-gray-900 flex items-center justify-center gap-2">
             <LogOut size={14} className="rotate-180" /> Return to Store
-          </Link>
+          </a>
         </div>
       </div>
     </div>

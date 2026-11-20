@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:admin": "vite --config admin/vite.config.js",
     "build": "vite build",
+    "build:admin": "vite build --config admin/vite.config.js",
     "build:dev": "vite build --mode development",
     "preview": "vite preview"
   },

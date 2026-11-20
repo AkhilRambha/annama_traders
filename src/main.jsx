@@ -20,7 +20,6 @@ import "./styles.css";
 import { CartProvider } from "./context/CartContext";
 import { AdminProvider } from "./context/AdminContext";
 import { Toaster } from "@/components/ui/sonner";
-import AdminDashboard from "./pages/AdminDashboard";
 import Checkout from "./pages/Checkout";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -45,8 +44,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             <Route path="/checkout" element={<Checkout />} />
             <Route path="*" element={<NotFound />} />
           </Route>
-          {/* Admin Route (No Layout) */}
-          <Route path="/admin" element={<AdminDashboard />} />
         </Routes>
       </BrowserRouter>
       <Toaster position="bottom-right" />
