@@ -63,7 +63,7 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-3 hover:text-gold transition-colors cursor-pointer">
                 <Mail size={14} className="text-gold shrink-0" />
-                <span>annammatraders98@gmail.com</span>
+                <span className="min-w-0 [overflow-wrap:anywhere]">annammatraders98@gmail.com</span>
               </li>
               <li className="flex items-center gap-3 hover:text-gold transition-colors cursor-pointer">
                 <MapPin size={14} className="text-gold shrink-0" />

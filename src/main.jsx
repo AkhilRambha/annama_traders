@@ -21,6 +21,7 @@ import { CartProvider } from "./context/CartContext";
 import { AdminProvider } from "./context/AdminContext";
 import { Toaster } from "@/components/ui/sonner";
 import Checkout from "./pages/Checkout";
+import Lookbook from "./pages/Lookbook";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -32,6 +33,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             <Route index element={<Home />} />
             <Route path="/about" element={<About />} />
             <Route path="/collections" element={<Collections />} />
+            <Route path="/lookbook" element={<Lookbook />} />
             <Route path="/product/:id" element={<ProductDetails />} />
             <Route path="/jewellery" element={<Jewellery />} />
             <Route path="/testimonials" element={<Testimonials />} />

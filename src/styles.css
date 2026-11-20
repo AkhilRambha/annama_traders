@@ -88,6 +88,31 @@
   .text-balance { text-wrap: balance; }
 }
 
+.premium-nav-link::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 1.15rem;
+  left: 0;
+  height: 1px;
+  background: var(--color-gold-deep);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 220ms ease;
+}
+
+.premium-nav-link:hover::after,
+.premium-nav-link:focus-visible::after,
+.premium-nav-link[aria-expanded="true"]::after {
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .premium-nav-link::after {
+    transition: none;
+  }
+}
+
 @keyframes shimmer {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
