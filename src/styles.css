@@ -59,6 +59,8 @@
 @layer utilities {
   .font-serif { font-family: var(--font-serif); }
   .font-script { font-family: var(--font-script); }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+  .cart-drawer-footer { padding-bottom: calc(1.5rem + env(safe-area-inset-bottom)); }
   .gradient-royal {
     background: linear-gradient(135deg,
       oklch(0.25 0.12 22) 0%,

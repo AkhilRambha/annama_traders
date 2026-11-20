@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -7,6 +8,11 @@ import { useCart } from "@/context/CartContext";
 export function CartDrawer() {
   const navigate = useNavigate();
   const { isCartOpen, setIsCartOpen, cart, updateQuantity, removeFromCart, getCartTotal, beginCheckout } = useCart();
+  const cartItemsRef = useRef(null);
+
+  useLayoutEffect(() => {
+    if (isCartOpen) cartItemsRef.current?.scrollTo(0, 0);
+  }, [isCartOpen, cart.length]);
 
   const openCheckout = () => {
     if (!cart.length) return;
@@ -24,14 +30,14 @@ export function CartDrawer() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsCartOpen(false)}
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
           />
           <motion.aside
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l border-border bg-background shadow-2xl sm:w-[400px]"
+            className="fixed inset-y-0 right-0 z-[60] flex w-full flex-col border-l border-border bg-background shadow-2xl sm:w-[400px]"
           >
             <div className="flex items-center justify-between border-b border-border bg-accent/5 p-6">
               <div className="flex items-center gap-3">
@@ -43,7 +49,7 @@ export function CartDrawer() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6">
+            <div ref={cartItemsRef} className="flex-1 overflow-y-auto p-6">
               {cart.length === 0 ? (
                 <div className="flex h-full flex-col items-center justify-center text-center opacity-70">
                   <ShoppingBag size={48} className="mb-4 text-muted-foreground" />
@@ -80,7 +86,7 @@ export function CartDrawer() {
             </div>
 
             {cart.length > 0 && (
-              <div className="border-t border-border bg-accent/5 p-6">
+              <div className="cart-drawer-footer border-t border-border bg-accent/5 p-6">
                 <div className="mb-6 flex items-center justify-between">
                   <span className="text-sm uppercase tracking-widest text-muted-foreground">Subtotal</span>
                   <span className="font-serif text-2xl text-primary">{formatPrice(getCartTotal())}</span>

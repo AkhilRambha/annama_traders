@@ -16,7 +16,7 @@ export function BottomNav() {
   ];
 
   return (
-    <div className="lg:hidden fixed bottom-0 inset-x-0 bg-background border-t border-border z-40 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+    <div className="hidden fixed bottom-0 inset-x-0 bg-background border-t border-border z-40 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)] md:flex lg:hidden">
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map(({ icon: Icon, label, path }) => {
           const isActive = location.pathname === path || (path !== "/" && location.pathname.startsWith(path.split("?")[0]));

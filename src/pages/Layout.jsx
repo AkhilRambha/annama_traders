@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { Navbar } from "@/components/site/Navbar";
 import { Footer } from "@/components/site/Footer";
@@ -8,13 +8,18 @@ import { BottomNav } from "@/components/site/BottomNav";
 import { useAdmin } from "@/context/AdminContext";
 
 function LayoutComponent() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const { contactInfo } = useAdmin();
   const whatsappNumber = String(contactInfo?.phone || "917093010264").replace(/\D/g, "");
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    window.history.scrollRestoration = "manual";
+    const root = document.documentElement;
+    const previousScrollBehavior = root.style.scrollBehavior;
+    root.style.scrollBehavior = "auto";
     window.scrollTo(0, 0);
-  }, [pathname]);
+    root.style.scrollBehavior = previousScrollBehavior;
+  }, [pathname, search]);
   return (
     <div className="min-h-screen flex flex-col relative">
       <Navbar />

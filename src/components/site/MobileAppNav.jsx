@@ -7,6 +7,8 @@ export function MobileAppNav() {
   const { getCartCount, setIsCartOpen } = useCart();
   const cartCount = getCartCount();
 
+  if (location.pathname === "/checkout") return null;
+
   const navItems = [
     { icon: Home, label: "Home", path: "/" },
     { icon: LayoutGrid, label: "Categories", path: "/collections" },
